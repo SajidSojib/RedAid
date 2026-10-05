@@ -2,12 +2,13 @@ import express, { Application } from "express";
 import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import { auth } from "./lib/auth";
+import config from "./config";
 
 const app: Application = express();
 
 app.use(express.json());
 app.use(cors({
-    origin: [process.env.FRONTEND_URL || "http://localhost:3000"],
+    origin: [config.frontend_url],
     credentials: true
 }))
 
