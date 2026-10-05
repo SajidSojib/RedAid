@@ -1,0 +1,79 @@
+model Division {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(30)
+  bn_name   String   @db.VarChar(30)
+  url       String   @db.VarChar(150)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  districts District[]
+
+  @@map("divisions")
+}
+
+model District {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(30)
+  bn_name     String   @db.VarChar(30)
+  url         String   @db.VarChar(150)
+  latitude    Float
+  longitude   Float
+  divisionId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  division Division @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+
+  upazilas Upazila[]
+
+  @@index([divisionId])
+  @@map("districts")
+}
+
+model Upazila {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(30)
+  bn_name     String   @db.VarChar(30)
+  url         String   @db.VarChar(150)
+  districtId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  district District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+
+  unions   Union[]
+  pourashavas Pourashava[]
+
+  @@index([districtId])
+  @@map("upazilas")
+}
+
+model Union {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(30)
+  bn_name     String   @db.VarChar(30)
+  url         String   @db.VarChar(150)
+  upazilaId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  upazila Upazila @relation(fields: [upazilaId], references: [id], onDelete: Cascade)
+
+  @@index([upazilaId])
+  @@map("unions")
+}
+
+model Pourashava {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(30)
+  bn_name     String   @db.VarChar(30)
+  url         String   @db.VarChar(150)
+  upazilaId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  upazila Upazila @relation(fields: [upazilaId], references: [id], onDelete: Cascade)
+
+  @@index([upazilaId])
+  @@map("pourashavas")
+}
