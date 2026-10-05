@@ -42,7 +42,6 @@ model Upazila {
   district District @relation(fields: [districtId], references: [id], onDelete: Cascade)
 
   unions   Union[]
-  pourashavas Pourashava[]
 
   @@index([districtId])
   @@map("upazilas")
@@ -57,23 +56,10 @@ model Union {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  upazila Upazila @relation(fields: [upazilaId], references: [id], onDelete: Cascade)
+  upazila Upazila @relation(fields: [upazilaId], references: [id], onDelete: Cascade) 
 
+  donorServiceAreas DonorServiceArea[]
+  
   @@index([upazilaId])
   @@map("unions")
-}
-
-model Pourashava {
-  id          String   @id @default(uuid())
-  name        String   @db.VarChar(30)
-  bn_name     String   @db.VarChar(30)
-  url         String   @db.VarChar(150)
-  upazilaId String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  upazila Upazila @relation(fields: [upazilaId], references: [id], onDelete: Cascade)
-
-  @@index([upazilaId])
-  @@map("pourashavas")
 }

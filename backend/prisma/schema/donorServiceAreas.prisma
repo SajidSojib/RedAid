@@ -1,0 +1,14 @@
+model DonorServiceArea {
+  id          String   @id @default(uuid())
+  donorId     String
+  unionId     String
+
+  donor User @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  union Union @relation(fields: [unionId], references: [id], onDelete: Cascade)
+  
+  @@unique([donorId, unionId])
+  @@index([donorId])
+  @@index([unionId])
+
+  @@map("donor-service-areas")
+}
