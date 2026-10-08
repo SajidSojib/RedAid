@@ -1,0 +1,18 @@
+model DonationHistory {
+  id        String   @id @default(uuid())
+  donorId   String
+  requestId String?
+  matchId   String?  @unique // one history row per completed match
+  bankId    String?
+  units     Int      @default(1)
+  donatedAt DateTime @default(now())
+
+  donor   User             @relation(fields: [donorId], references: [id])
+  request DonationRequest? @relation(fields: [requestId], references: [id])
+  match   DonationMatch?   @relation(fields: [matchId], references: [id])
+  bank    BloodBank?       @relation(fields: [bankId], references: [id])
+  points  PointTransaction[]
+
+  @@index([donorId, donatedAt])
+  @@map("donation-history")
+}

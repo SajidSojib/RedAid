@@ -1,0 +1,70 @@
+model BloodBank {
+  id                 String             @id @default(uuid())
+  ownerId            String             @unique
+  name               String
+  address            String
+  phone              String
+  licenseNumber      String?
+  upazilaId          String
+  latitude           Float?
+  longitude          Float?
+  verificationStatus VerificationStatus @default(PENDING)
+  verificationNote   String?
+  verifiedAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  owner     User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  upazila   Upazila           @relation(fields: [upazilaId], references: [id])
+  inventory BloodInventory[]
+  requests  BankRequest[]
+  donations DonationHistory[]
+
+  @@index([verificationStatus, upazilaId])
+  @@map("blood-banks")
+}
+
+model BloodInventory {
+  bankId         String
+  bloodType      BloodType
+  unitsAvailable Int       @default(0)
+  updatedAt      DateTime  @updatedAt
+
+  bank BloodBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  @@id([bankId, bloodType])
+  @@map("blood-inventory")
+}
+
+model BankRequest {
+  id             String            @id @default(uuid())
+  requesterId    String
+  bankId         String
+  bloodType      BloodType
+  unitsRequested Int
+  status         BankRequestStatus @default(PENDING)
+  note           String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  requester User      @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  bank      BloodBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  @@index([bankId, status])
+  @@index([requesterId])
+  @@map("bank-requests")
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum BankRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FULFILLED
+  CANCELLED
+}

@@ -1,5 +1,3 @@
-"use client";
-
 import { Book, Menu, Sunset, Trees, Zap } from "lucide-react";
 import { cn } from "cn";
 
@@ -25,8 +23,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { env } from "../env";
+import { navbarAfterLogin } from "@/routes/navRoutes";
+import Link from "next/link";
+import Image from "next/image";
+import { authClient } from "@/lib/auth-client";
 
-interface MenuItem {
+export interface MenuItem {
   title: string;
   url: string;
   description?: string;
@@ -58,144 +61,104 @@ interface Navbar35Props {
 
 const defaultProps: Navbar35Props = {
   logo: {
-    url: "https://www.shadcnblocks.com",
+    url: env.NEXT_PUBLIC_FRONTEND_URL,
     src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/logos/shadcnblockscom-icon.svg",
     alt: "logo",
-    title: "Shadcnblocks.com",
+    title: "RedAid",
   },
-  menu: [
-    { title: "Home", url: "#" },
-    {
-      title: "Products",
-      url: "#",
-      items: [
-        {
-          title: "Blog",
-          description: "The latest industry news, updates, and info",
-          icon: <Book className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Company",
-          description: "Our mission is to innovate and empower the world",
-          icon: <Trees className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Careers",
-          description: "Browse job listing and discover our workspace",
-          icon: <Sunset className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Support",
-          description:
-            "Get in touch with our support team or visit our community forums",
-          icon: <Zap className="size-5 shrink-0" />,
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Resources",
-      url: "#",
-      items: [
-        {
-          title: "Help Center",
-          description: "Get all the answers you need right here",
-          icon: <Zap className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Contact Us",
-          description: "We are here to help you with any questions you have",
-          icon: <Sunset className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Status",
-          description: "Check the current status of our services and APIs",
-          icon: <Trees className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Terms of Service",
-          description: "Our terms and conditions for using our services",
-          icon: <Book className="size-5 shrink-0" />,
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Pricing",
-      url: "#",
-    },
-    {
-      title: "Blog",
-      url: "#",
-    },
-  ],
+  menu: navbarAfterLogin,
   auth: {
-    login: { title: "Login", url: "#" },
-    signup: { title: "Sign up", url: "#" },
+    login: { title: "Login", url: "/login" },
+    signup: { title: "Sign up", url: "/signup" },
   },
 };
 
-const Navbar35 = ({ className, ...props }: Partial<Navbar35Props>) => {
+const Navbar35 = async ({ className, ...props }: Partial<Navbar35Props>) => {
   const { logo, menu, auth } = {
     ...defaultProps,
     ...props,
   };
 
+  const {data: session} = await authClient.getSession();
+
   return (
-    <section className={cn("py-4", className)}>
-      <div className="container">
+    <section className={cn("py-4 border-b-2 border-primary", className)}>
+      <div className="container mx-auto">
+        {/* desktop view */}
         <nav className="hidden grid-cols-[1fr_auto_1fr] items-center lg:grid">
-          <a
+          <Link
             href={logo.url}
             className="flex items-center gap-2 justify-self-start"
           >
-            <img
+            <Image
               src={logo.src}
               className="max-h-8 dark:invert"
               alt={logo.alt}
+              width={20}
+              height={20}
             />
-            <span className="text-lg font-semibold tracking-tighter">
+            <span className="text-xl lg:text-2xl font-semibold tracking-tighter text-primary">
               {logo.title}
             </span>
-          </a>
+          </Link>
           <NavigationMenu className="justify-self-center">
             <NavigationMenuList>
               {menu.map((item) => renderMenuItem(item))}
             </NavigationMenuList>
           </NavigationMenu>
           <div className="flex gap-2 justify-self-end">
-            <Button variant="outline" size="sm" render={<a href={auth.login.url} />} nativeButton={false}>{auth.login.title}</Button>
-            <Button size="sm" render={<a href={auth.signup.url} />} nativeButton={false}>{auth.signup.title}</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              render={<a href={auth.login.url} />}
+              nativeButton={false}
+            >
+              {auth.login.title}
+            </Button>
+            <Button
+              size="sm"
+              render={<a href={auth.signup.url} />}
+              nativeButton={false}
+            >
+              {auth.signup.title}
+            </Button>
           </div>
         </nav>
 
+        {/* mobile view */}
         <div className="block lg:hidden">
           <div className="flex items-center justify-between">
-            <a href={logo.url} className="flex items-center gap-2">
-              <img
+            <Link href={logo.url} className="flex items-center gap-2">
+              <Image
                 src={logo.src}
                 className="max-h-8 dark:invert"
                 alt={logo.alt}
+                width={20}
+                height={20}
               />
-            </a>
+              <span className="text-lg font-semibold tracking-tighter text-primary">
+                {logo.title}
+              </span>
+            </Link>
             <Sheet>
-              <SheetTrigger render={<Button variant="outline" size="icon" />}><Menu className="size-4" /></SheetTrigger>
+              <SheetTrigger render={<Button variant="outline" size="icon" />}>
+                <Menu className="size-4" />
+              </SheetTrigger>
               <SheetContent className="overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>
-                    <a href={logo.url} className="flex items-center gap-2">
-                      <img
+                    <Link href={logo.url} className="flex items-center gap-2">
+                      <Image
                         src={logo.src}
                         className="max-h-8 dark:invert"
                         alt={logo.alt}
+                        width={20}
+                        height={20}
                       />
-                    </a>
+                      <span className="text-xl font-semibold tracking-tighter text-primary">
+                        {logo.title}
+                      </span>
+                    </Link>
                   </SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-6 p-4">
@@ -204,8 +167,14 @@ const Navbar35 = ({ className, ...props }: Partial<Navbar35Props>) => {
                   </Accordion>
 
                   <div className="flex flex-col gap-3">
-                    <Button variant="outline" render={<a href={auth.login.url} />} nativeButton={false}>{auth.login.title}</Button>
-                    <Button render={<a href={auth.signup.url} />} nativeButton={false}>{auth.signup.title}</Button>
+                    <Link href={auth.login.url} passHref>
+                      <Button variant="outline" className="w-full">
+                        {auth.login.title}
+                      </Button>
+                    </Link>
+                    <Link href={auth.signup.url} passHref>
+                      <Button className="w-full">{auth.signup.title}</Button>
+                    </Link>
                   </div>
                 </div>
               </SheetContent>

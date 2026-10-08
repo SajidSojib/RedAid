@@ -15,6 +15,16 @@ model User {
   accounts         Account[]
 
   donorServiceAreas DonorServiceArea[]
+  requests          DonationRequest[]
+  matches           DonationMatch[]
+  donations         DonationHistory[]
+  bank              BloodBank?
+  bankRequests      BankRequest[]
+  pointTransactions PointTransaction[]
+  achievements      Achievement[]
+  notifications     Notification[]
+  reportsMade       Report[]   @relation("ReportsMade")
+  reportsReceived   Report[]   @relation("ReportsReceived")
 
   @@unique([email])
   @@map("user")

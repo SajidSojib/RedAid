@@ -1,0 +1,67 @@
+model DonationRequest {
+  id            String        @id @default(uuid())
+  requesterId   String
+  patientName   String?
+  hospitalName  String?
+  contactPhone  String?
+  note          String?
+  bloodType     BloodType
+  unitsNeeded   Int
+  unitsAccepted Int           @default(0)
+  urgency       Urgency       @default(NORMAL)
+  status        RequestStatus @default(OPEN)
+  upazilaId     String
+  unionId       String?
+  latitude      Float?
+  longitude     Float?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  requester User              @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  upazila   Upazila           @relation(fields: [upazilaId], references: [id])
+  union     Union?            @relation(fields: [unionId], references: [id])
+  matches   DonationMatch[]
+  donations DonationHistory[]
+
+  @@index([status, upazilaId, unionId])
+  @@index([requesterId])
+  @@map("donation-requests")
+}
+
+
+model DonationMatch {
+  id          String      @id @default(uuid())
+  requestId   String
+  donorId     String
+  status      MatchStatus @default(NOTIFIED)
+  notifiedAt  DateTime    @default(now())
+  respondedAt DateTime?
+
+  request  DonationRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  donor    User             @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  donation DonationHistory?
+
+  @@unique([requestId, donorId])
+  @@index([donorId, status])
+  @@map("donation-matches")
+}
+
+enum Urgency {
+  NORMAL
+  URGENT
+  CRITICAL
+}
+
+enum RequestStatus {
+  OPEN
+  FULFILLED
+  CANCELLED
+  EXPIRED
+}
+
+enum MatchStatus {
+  NOTIFIED
+  ACCEPTED
+  COMPLETED
+  CANCELLED
+}
