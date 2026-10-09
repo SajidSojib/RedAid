@@ -22,6 +22,7 @@ import { env } from "@/env";
 import { navbarAfterLogin, navbarBeforeLogin } from "@/routes/navRoutes";
 import { userServices } from "@/service/user.service";
 import { NavbarLinks } from "./navLinks";
+import LogoutButton from "../common/LogoutButton";
 
 export interface MenuItem {
   title: string;
@@ -217,13 +218,7 @@ export default async function Navbar({ className }: NavbarProps) {
 
                   <div className="flex flex-col gap-3">
                     {isLoggedIn ? (
-                      <Button
-                        className="w-full"
-                        render={<Link href="/logout" />}
-                        nativeButton={false}
-                      >
-                        Logout
-                      </Button>
+                      <LogoutButton></LogoutButton>
                     ) : (
                       <>
                         <Button

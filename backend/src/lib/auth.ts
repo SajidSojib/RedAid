@@ -31,6 +31,9 @@ export const auth = betterAuth({
     enabled: true,
     autoSignIn: false,
     requireEmailVerification: true,
+    onExistingUserSignUp: async ({ user }) => {
+      console.log(`User already exists. Use another email.`);
+    },
   },
   user: {
     additionalFields: {
@@ -72,7 +75,7 @@ export const auth = betterAuth({
           from: '"Red Aid" <service@redaid.com>',
           to: `${user.email}`,
           subject: "Verify your email address • RED AID",
-          text : `Hi ${user.name},
+          text: `Hi ${user.name},
 
 Welcome to RedAid. Please verify your email address to activate your account:
 
@@ -80,8 +83,8 @@ ${verificationUrl}
 
 This link will expire in 24 hours. If you didn't create a RedAid account, you can safely ignore this email.
 
-— The RedAid Team`,        
-         html: `
+— The RedAid Team`,
+          html: `
 <!DOCTYPE html>
 <html>
   <body style="margin:0; padding:0; background-color:#F8F7F6; font-family: Arial, Helvetica, sans-serif;">
@@ -131,8 +134,8 @@ This link will expire in 24 hours. If you didn't create a RedAid account, you ca
       </tr>
     </table>
   </body>
-</html>`       
-      });
+</html>`,
+        });
 
         console.log("Message sent: %s", info.messageId);
         console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
