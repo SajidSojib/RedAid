@@ -1,5 +1,5 @@
 model Division {
-  id        String   @id @default(uuid())
+  id        String   @id
   name      String   @db.VarChar(30)
   bn_name   String   @db.VarChar(30)
   url       String   @db.VarChar(150)
@@ -12,7 +12,7 @@ model Division {
 }
 
 model District {
-  id          String   @id @default(uuid())
+  id          String   @id
   name        String   @db.VarChar(30)
   bn_name     String   @db.VarChar(30)
   url         String   @db.VarChar(150)
@@ -31,7 +31,7 @@ model District {
 }
 
 model Upazila {
-  id          String   @id @default(uuid())
+  id          String   @id
   name        String   @db.VarChar(30)
   bn_name     String   @db.VarChar(30)
   url         String   @db.VarChar(150)
@@ -52,7 +52,7 @@ model Upazila {
 }
 
 model Union {
-  id          String   @id @default(uuid())
+  id          String   @id
   name        String   @db.VarChar(30)
   bn_name     String   @db.VarChar(30)
   url         String   @db.VarChar(150)
