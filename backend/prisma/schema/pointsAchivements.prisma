@@ -1,23 +1,8 @@
-model PointTransaction {
-  id         String   @id @default(uuid())
-  donorId    String
-  donationId String?
-  points     Int
-  reason     String
-  createdAt  DateTime @default(now())
-
-  donor    User             @relation(fields: [donorId], references: [id], onDelete: Cascade)
-  donation DonationHistory? @relation(fields: [donationId], references: [id])
-
-  @@index([donorId, createdAt])
-  @@map("point-transactions")
-}
-
 model Achievement {
   id        String          @id @default(uuid())
   donorId   String
   kind      AchievementKind
-  code      String // e.g. BRONZE, SILVER, GOLD, MILESTONE_10
+  code      CodeName
   awardedAt DateTime        @default(now())
 
   donor User @relation(fields: [donorId], references: [id], onDelete: Cascade)
@@ -29,4 +14,12 @@ model Achievement {
 enum AchievementKind {
   BADGE
   CERTIFICATE
+}
+
+enum CodeName {
+  BRONZE
+  SILVER
+  GOLD
+  DIAMOND
+  PLATINUM
 }

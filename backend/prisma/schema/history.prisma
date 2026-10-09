@@ -11,7 +11,6 @@ model DonationHistory {
   request DonationRequest? @relation(fields: [requestId], references: [id])
   match   DonationMatch?   @relation(fields: [matchId], references: [id])
   bank    BloodBank?       @relation(fields: [bankId], references: [id])
-  points  PointTransaction[]
 
   @@index([donorId, donatedAt])
   @@map("donation-history")

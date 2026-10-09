@@ -11,6 +11,7 @@ model User {
   status           UserStatus @default(ACTIVE)
   lastDonationDate DateTime
   phone            String
+  donationCount Int @default(0)
   sessions         Session[]
   accounts         Account[]
 
@@ -20,13 +21,13 @@ model User {
   donations         DonationHistory[]
   bank              BloodBank?
   bankRequests      BankRequest[]
-  pointTransactions PointTransaction[]
   achievements      Achievement[]
   notifications     Notification[]
   reportsMade       Report[]   @relation("ReportsMade")
   reportsReceived   Report[]   @relation("ReportsReceived")
 
   @@unique([email])
+  @@index([donationCount])
   @@map("user")
 }
 

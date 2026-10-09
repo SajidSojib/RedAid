@@ -1,4 +1,4 @@
-import { Navbar35 } from '@/components/navbar35'
+import Navbar from '@/components/layout/navbar'
 import React from 'react'
 
 export default function MainLayout({children}: {children: React.ReactNode}) {
@@ -6,7 +6,7 @@ export default function MainLayout({children}: {children: React.ReactNode}) {
     <>
         <div>
             <nav>
-                <Navbar35></Navbar35>
+                <Navbar></Navbar>
             </nav>
             <main>
                 {children}
