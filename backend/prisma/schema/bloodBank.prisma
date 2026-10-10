@@ -4,7 +4,7 @@ model BloodBank {
   name               String
   address            String
   phone              String
-  licenseNumber      String?
+  licenseNumber      String
   upazilaId          String
   latitude           Float?
   longitude          Float?

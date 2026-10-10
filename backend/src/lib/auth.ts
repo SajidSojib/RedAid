@@ -44,7 +44,7 @@ export const auth = betterAuth({
       },
       bloodType: {
         type: Object.values(BloodType),
-        required: true,
+        required: false,
       },
       status: {
         type: Object.values(UserStatus),
@@ -53,7 +53,7 @@ export const auth = betterAuth({
       },
       lastDonationDate: {
         type: "date",
-        required: true,
+        required: false,
       },
       phone: {
         type: "string",

@@ -7,7 +7,6 @@ import auth from "../../middlewares/auth";
 
 const router = Router();
 
-// Get locations
 router.get("/divisions", locationControllers.getAllDivisions);
 
 router.get(
@@ -25,7 +24,6 @@ router.get(
   locationControllers.getUnionsByUpazilaId,
 );
 
-// Create locations (Admin only)
 router.post(
   "/divisions",
   auth(Role.ADMIN),
