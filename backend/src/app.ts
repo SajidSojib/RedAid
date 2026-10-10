@@ -25,6 +25,7 @@ app.get("/", (req, res) => {
 // app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use("/api/auth", authRouter);
 app.use("/api/location", locationRouter);
+app.use("/api/me", locationRouter);
 
 //* error handler
 app.use(notFound);
