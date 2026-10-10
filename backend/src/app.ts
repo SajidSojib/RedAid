@@ -5,6 +5,7 @@ import { auth } from "./lib/auth";
 import config from "./config";
 import globalErrorHandler from "./middlewares/globalErrorHandler";
 import notFound from "./middlewares/notFound";
+import { locationRouter } from "./module/location/location.route";
 
 const app: Application = express();
 
@@ -21,6 +22,7 @@ app.get("/", (req, res) => {
 });
 
 app.all("/api/auth/{*any}", toNodeHandler(auth));
+app.use("/api/location", locationRouter);
 
 //* error handler
 app.use(notFound);
