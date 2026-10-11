@@ -7,6 +7,7 @@ import globalErrorHandler from "./middlewares/globalErrorHandler";
 import notFound from "./middlewares/notFound";
 import { locationRouter } from "./module/location/location.route";
 import { authRouter } from "./module/auth/auth.route";
+import { requestRouter } from "./module/request/request.route";
 
 const app: Application = express();
 
@@ -22,10 +23,11 @@ app.get("/", (req, res) => {
     res.send("Welcome to the RedAid API!");
 });
 
-// app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use("/api/auth", authRouter);
+app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use("/api/location", locationRouter);
 app.use("/api/me", locationRouter);
+app.use("/api/requests", requestRouter);
 
 //* error handler
 app.use(notFound);

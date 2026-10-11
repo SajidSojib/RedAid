@@ -1,7 +1,11 @@
 import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../utils/apiError";
-import { BloodType } from "../../../generated/prisma/enums";
+import { BloodType, VerificationStatus } from "../../../generated/prisma/enums";
 
+type ServiceAreaInput = {
+  upazilaId: string;
+  unionId?: string | null;
+};
 
 type UpdateMyProfileInput = {
   name?: string;
@@ -9,10 +13,7 @@ type UpdateMyProfileInput = {
   image?: string;
   bloodType?: BloodType;
   lastDonationDate?: Date | string | null;
-  serviceAreas?: {
-    upazilaId: string;
-    unionId?: string | null;
-  }[];
+  serviceAreas?: ServiceAreaInput[];
 };
 
 type UpdateMyBankInput = {
@@ -46,6 +47,53 @@ const getMyProfile = async (userId: string) => {
 };
 
 
+const validateServiceAreas = async (serviceAreas: ServiceAreaInput[]) => {
+  if (serviceAreas.length === 0) {
+    throw new ApiError(400, "You must select at least one service area");
+  }
+
+  // Duplicate = same upazila AND same union (two unions in one upazila is fine)
+  const keys = serviceAreas.map((a) => `${a.upazilaId}:${a.unionId ?? "ALL"}`);
+  if (new Set(keys).size !== keys.length) {
+    throw new ApiError(400, "Duplicate service areas are not allowed");
+  }
+
+  const upazilaIds = [...new Set(serviceAreas.map((a) => a.upazilaId))];
+  const unionIds = [
+    ...new Set(serviceAreas.flatMap((a) => (a.unionId ? [a.unionId] : []))),
+  ];
+
+  const [upazilas, unions] = await Promise.all([
+    prisma.upazila.findMany({
+      where: { id: { in: upazilaIds } },
+      select: { id: true },
+    }),
+    unionIds.length > 0
+      ? prisma.union.findMany({
+          where: { id: { in: unionIds } },
+          select: { id: true, upazilaId: true },
+        })
+      : Promise.resolve([] as { id: string; upazilaId: string }[]),
+  ]);
+
+  if (upazilas.length !== upazilaIds.length) {
+    throw new ApiError(400, "One or more selected upazilas do not exist");
+  }
+  if (unions.length !== unionIds.length) {
+    throw new ApiError(400, "One or more selected unions do not exist");
+  }
+
+  const parentOf = new Map(unions.map((u) => [u.id, u.upazilaId]));
+  for (const area of serviceAreas) {
+    if (area.unionId && parentOf.get(area.unionId) !== area.upazilaId) {
+      throw new ApiError(
+        400,
+        "A selected union does not belong to its upazila",
+      );
+    }
+  }
+};
+
 const updateMyProfile = async (
   userId: string,
   payload: UpdateMyProfileInput,
@@ -59,141 +107,82 @@ const updateMyProfile = async (
           ? payload.lastDonationDate
           : new Date(payload.lastDonationDate);
 
-  if (
-    lastDonationDate instanceof Date &&
-    Number.isNaN(lastDonationDate.getTime())
-  ) {
-    throw new ApiError(400, "Invalid last donation date");
+  if (lastDonationDate instanceof Date) {
+    if (Number.isNaN(lastDonationDate.getTime())) {
+      throw new ApiError(400, "Invalid last donation date");
+    }
+    if (lastDonationDate > new Date()) {
+      throw new ApiError(400, "Last donation date cannot be in the future");
+    }
   }
 
   const updateData = {
     ...(payload.name !== undefined && { name: payload.name }),
     ...(payload.phone !== undefined && { phone: payload.phone }),
     ...(payload.image !== undefined && { image: payload.image }),
-    ...(payload.bloodType !== undefined && {
-      bloodType: payload.bloodType,
-    }),
-    ...(lastDonationDate !== undefined && {
-      lastDonationDate,
-    }),
+    ...(payload.bloodType !== undefined && { bloodType: payload.bloodType }),
+    ...(lastDonationDate !== undefined && { lastDonationDate }),
   };
 
-  const shouldUpdateServiceAreas = payload.serviceAreas !== undefined;
+  const serviceAreas = payload.serviceAreas;
 
-  if (Object.keys(updateData).length === 0 && !shouldUpdateServiceAreas) {
+  if (Object.keys(updateData).length === 0 && serviceAreas === undefined) {
     throw new ApiError(400, "Provide at least one field to update");
   }
 
-  if (shouldUpdateServiceAreas) {
-    const { serviceAreas } = payload;
-
-    if (!serviceAreas || serviceAreas.length === 0) {
-      throw new ApiError(400, "You must select at least one service area");
-    }
-
-    const upazilaIds = serviceAreas.map((area) => area.upazilaId);
-
-    if (new Set(upazilaIds).size !== upazilaIds.length) {
-      throw new ApiError(
-        400,
-        "Each service area must have a different upazila",
-      );
-    }
-
-    const existingUpazilas = await prisma.upazila.findMany({
-      where: {
-        id: { in: upazilaIds },
-      },
-      select: { id: true },
-    });
-
-    if (existingUpazilas.length !== upazilaIds.length) {
-      throw new ApiError(400, "One or more selected upazilas do not exist");
-    }
-
-    const unionIds = serviceAreas
-      .map((area) => area.unionId)
-      .filter((id): id is string => Boolean(id));
-
-    if (new Set(unionIds).size !== unionIds.length) {
-      throw new ApiError(400, "A union cannot be selected more than once");
-    }
-
-    if (unionIds.length > 0) {
-      const existingUnions = await prisma.union.findMany({
-        where: {
-          id: { in: unionIds },
-        },
-        select: {
-          id: true,
-          upazilaId: true,
-        },
-      });
-
-      if (existingUnions.length !== unionIds.length) {
-        throw new ApiError(400, "One or more selected unions do not exist");
-      }
-
-      const unionUpazilaMap = new Map(
-        existingUnions.map((union) => [union.id, union.upazilaId]),
-      );
-
-      for (const area of serviceAreas) {
-        if (
-          area.unionId &&
-          unionUpazilaMap.get(area.unionId) !== area.upazilaId
-        ) {
-          throw new ApiError(
-            400,
-            "The selected union does not belong to its upazila",
-          );
-        }
-      }
-    }
+  if (serviceAreas !== undefined) {
+    await validateServiceAreas(serviceAreas);
   }
 
-  const user = await prisma.$transaction(async (tx) => {
-    if (Object.keys(updateData).length > 0) {
-      await tx.user.update({
-        where: { id: userId },
-        data: updateData,
-      });
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.user.findUnique({
+      where: { id: userId },
+      select: { donationCount: true, bloodType: true, lastDonationDate: true },
+    });
+
+    if (!current) {
+      throw new ApiError(404, "User not found");
     }
 
-    if (shouldUpdateServiceAreas) {
-      await tx.donorServiceArea.deleteMany({
-        where: { donorId: userId },
-      });
+    // Once a donation is confirmed, the system owns these two fields.
+    if (current.donationCount > 0) {
+      const bloodTypeChanged =
+        payload.bloodType !== undefined &&
+        payload.bloodType !== current.bloodType;
 
+      const dateChanged =
+        lastDonationDate !== undefined &&
+        (lastDonationDate?.getTime() ?? null) !==
+          (current.lastDonationDate?.getTime() ?? null);
+
+      if (bloodTypeChanged || dateChanged) {
+        throw new ApiError(
+          403,
+          "Blood type and last donation date can't be changed after a confirmed donation. Please contact an admin.",
+        );
+      }
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await tx.user.update({ where: { id: userId }, data: updateData });
+    }
+
+    if (serviceAreas !== undefined) {
+      await tx.donorServiceArea.deleteMany({ where: { donorId: userId } });
       await tx.donorServiceArea.createMany({
-        data: payload.serviceAreas!.map((area) => ({
+        data: serviceAreas.map((a) => ({
           donorId: userId,
-          upazilaId: area.upazilaId,
-          unionId: area.unionId || null,
+          upazilaId: a.upazilaId,
+          unionId: a.unionId ?? null,
         })),
       });
     }
 
-    const updatedUser = await tx.user.findUnique({
+    return tx.user.findUniqueOrThrow({
       where: { id: userId },
-      include: {
-        donorServiceAreas: {
-          include: {
-            upazila: true,
-            union: true,
-          },
-        },
-      },
+      include: {donorServiceAreas : true},
     });
-
-    if (!updatedUser) {
-      throw new ApiError(404, "User not found");
-    }
-
-    return updatedUser;
   });
-
-  return user;
 };
 
 const getMyBank = async (userId: string) => {
@@ -214,57 +203,92 @@ const getMyBank = async (userId: string) => {
 const updateMyBank = async (userId: string, payload: UpdateMyBankInput) => {
   const bank = await prisma.bloodBank.findUnique({
     where: { ownerId: userId },
-    select: { id: true },
+    select: {
+      id: true,
+      name: true,
+      address: true,
+      licenseNumber: true,
+      upazilaId: true,
+      verificationStatus: true,
+    },
   });
 
   if (!bank) {
     throw new ApiError(404, "Blood bank not found for this account");
   }
 
-  if (payload.upazilaId !== undefined) {
+  // Required text fields: if sent, they must be non-empty (null is not allowed)
+  const name = payload.name?.trim();
+  const address = payload.address?.trim();
+  const phone = payload.phone?.trim();
+  const licenseNumber = payload.licenseNumber?.trim();
+
+  if (payload.name !== undefined && !name) {
+    throw new ApiError(400, "Bank name cannot be empty");
+  }
+  if (payload.address !== undefined && !address) {
+    throw new ApiError(400, "Address cannot be empty");
+  }
+  if (payload.phone !== undefined && !phone) {
+    throw new ApiError(400, "Phone cannot be empty");
+  }
+  if (payload.licenseNumber !== undefined && !licenseNumber) {
+    throw new ApiError(400, "License number cannot be empty");
+  }
+
+  if (payload.upazilaId !== undefined && payload.upazilaId !== bank.upazilaId) {
     const upazila = await prisma.upazila.findUnique({
       where: { id: payload.upazilaId },
       select: { id: true },
     });
-
     if (!upazila) {
       throw new ApiError(400, "Selected upazila does not exist");
     }
   }
 
+  // Coordinates are optional: a number sets them, null clears them
+  const validCoord = (v: number, limit: number) =>
+    Number.isFinite(v) && v >= -limit && v <= limit;
+
   if (
     payload.latitude !== undefined &&
     payload.latitude !== null &&
-    (payload.latitude < -90 || payload.latitude > 90)
+    !validCoord(payload.latitude, 90)
   ) {
     throw new ApiError(400, "Latitude must be between -90 and 90");
   }
-
   if (
     payload.longitude !== undefined &&
     payload.longitude !== null &&
-    (payload.longitude < -180 || payload.longitude > 180)
+    !validCoord(payload.longitude, 180)
   ) {
     throw new ApiError(400, "Longitude must be between -180 and 180");
   }
 
+  // Identity fields are what the admin verified. Changing them invalidates that approval.
+  const identityChanged =
+    (name !== undefined && name !== bank.name) ||
+    (address !== undefined && address !== bank.address) ||
+    (licenseNumber !== undefined && licenseNumber !== bank.licenseNumber) ||
+    (payload.upazilaId !== undefined && payload.upazilaId !== bank.upazilaId);
+
+  const reverificationRequired =
+    bank.verificationStatus === VerificationStatus.REJECTED ||
+    (bank.verificationStatus === VerificationStatus.VERIFIED &&
+      identityChanged);
+
   const updateData = {
-    ...(payload.name !== undefined && { name: payload.name }),
-    ...(payload.address !== undefined && { address: payload.address }),
-    ...(payload.phone !== undefined && { phone: payload.phone }),
-    ...(payload.licenseNumber !== undefined && {
-      licenseNumber: payload.licenseNumber,
-    }),
-    ...(payload.upazilaId !== undefined && {
-      upazila: {
-        connect: { id: payload.upazilaId },
-      },
-    }),
-    ...(payload.latitude !== undefined && {
-      latitude: payload.latitude,
-    }),
-    ...(payload.longitude !== undefined && {
-      longitude: payload.longitude,
+    ...(name !== undefined && { name }),
+    ...(address !== undefined && { address }),
+    ...(phone !== undefined && { phone }),
+    ...(licenseNumber !== undefined && { licenseNumber }),
+    ...(payload.upazilaId !== undefined && { upazilaId: payload.upazilaId }),
+    ...(payload.latitude !== undefined && { latitude: payload.latitude }),
+    ...(payload.longitude !== undefined && { longitude: payload.longitude }),
+    ...(reverificationRequired && {
+      verificationStatus: VerificationStatus.PENDING,
+      verifiedAt: null,
+      verificationNote: null,
     }),
   };
 
@@ -275,13 +299,12 @@ const updateMyBank = async (userId: string, payload: UpdateMyBankInput) => {
   const updatedBank = await prisma.bloodBank.update({
     where: { id: bank.id },
     data: updateData,
-    include: {
-      inventory: true,
-    },
+    include: { inventory: true },
   });
 
-  return updatedBank;
+  return { ...updatedBank, reverificationRequired };
 };
+
 
 export const profileServices = {
   getMyProfile,

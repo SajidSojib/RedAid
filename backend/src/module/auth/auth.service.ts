@@ -43,18 +43,19 @@ type LoginUserInput = {
 };
 
 const loginUser = async (payload: LoginUserInput) => {
-  const result = await betterAuth.api.signInEmail({
-    body: {
-      email: payload.email,
-      password: payload.password,
-    },
+  const { headers, response } = await betterAuth.api.signInEmail({
+    body: { email: payload.email, password: payload.password },
+    returnHeaders: true,
   });
 
-  if (!result.user) {
+  if (!response.user) {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  return result;
+  if (!response.user.emailVerified) {
+    throw new ApiError(403, "Please verify your email address");
+  }
+  return { result: response, cookies: headers.getSetCookie() };
 };
 
 
@@ -201,13 +202,16 @@ const registerBankOwner = async (
       bloodType: payload.bloodType,
       image: payload.image || undefined,
       phone: payload.phone,
-      role: Role.BANK,
     },
   });
 
   try {
     // bank and inventory
     const bloodBank = await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: result.user.id },
+        data: { role: Role.BANK },
+      });
       const createdBank = await tx.bloodBank.create({
         data: {
           ownerId: result.user.id,
