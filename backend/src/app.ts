@@ -8,6 +8,8 @@ import notFound from "./middlewares/notFound";
 import { locationRouter } from "./module/location/location.route";
 import { authRouter } from "./module/auth/auth.route";
 import { requestRouter } from "./module/request/request.route";
+import { profileRouter } from "./module/profile/profile.route";
+import { matchesRouter } from "./module/match/match.route";
 
 const app: Application = express();
 
@@ -26,8 +28,9 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRouter);
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use("/api/location", locationRouter);
-app.use("/api/me", locationRouter);
+app.use("/api/profile", profileRouter);
 app.use("/api/requests", requestRouter);
+app.use("/api/matches", matchesRouter);
 
 //* error handler
 app.use(notFound);
