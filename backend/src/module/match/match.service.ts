@@ -41,6 +41,7 @@ const assertMatchStatus = (status: unknown): void => {
   }
 };
 
+// ---------- 1. List my offers ----------
 
 const getMyOffers = async (
   donorId: string,
@@ -64,6 +65,7 @@ const getMyOffers = async (
   });
 };
 
+// ---------- 2. Accept an offer ----------
 
 const acceptOffer = async (donorId: string, matchId: string) => {
   return prisma.$transaction(async (tx) => {
@@ -95,7 +97,7 @@ const acceptOffer = async (donorId: string, matchId: string) => {
       throw new ApiError(409, "This donation request is no longer open");
     }
 
-    // Re-check donor status and eligibility at acceptance time.
+    // Re-check donor status and eligibility at acceptance time
     if (
       match.donor.status !== UserStatus.ACTIVE ||
       !match.donor.emailVerified
@@ -115,36 +117,36 @@ const acceptOffer = async (donorId: string, matchId: string) => {
       );
     }
 
-    const request = match.request;
+    // A donor can only donate once every 90 days, so only one accepted donation at a time
+    const activeCommitment = await tx.donationMatch.count({
+      where: { donorId, status: MatchStatus.ACCEPTED },
+    });
 
-    if (request.unitsAccepted >= request.unitsNeeded) {
-      throw new ApiError(409, "All available donor slots have been filled");
+    if (activeCommitment > 0) {
+      throw new ApiError(
+        409,
+        "You already have an accepted donation in progress. Complete or cancel it before accepting another.",
+      );
     }
 
-    /*
-     * Guarded compare-and-swap:
-     * only increment if unitsAccepted still has the value we just read.
-     * If another transaction claims a slot first, this update affects 0 rows.
-     */
+    const request = match.request;
+
+    // Claim a slot. The "slot is free" check and the increment happen in one statement,
+    // so concurrent donors queue up and each free slot is taken exactly once.
     const claimed = await tx.donationRequest.updateMany({
       where: {
         id: request.id,
         status: RequestStatus.OPEN,
-        unitsAccepted: request.unitsAccepted,
+        unitsAccepted: { lt: request.unitsNeeded },
       },
-      data: {
-        unitsAccepted: { increment: 1 },
-      },
+      data: { unitsAccepted: { increment: 1 } },
     });
 
     if (claimed.count === 0) {
-      throw new ApiError(
-        409,
-        "This request changed while you were accepting it. Please try again.",
-      );
+      throw new ApiError(409, "All available donor slots have been filled");
     }
 
-    // Change only this donor's still-pending offer.
+    // Mark this donor's still-pending offer as accepted
     const accepted = await tx.donationMatch.updateMany({
       where: {
         id: match.id,
@@ -158,42 +160,27 @@ const acceptOffer = async (donorId: string, matchId: string) => {
     });
 
     if (accepted.count === 0) {
-      // Throwing rolls back the slot increment too.
+      // Throwing rolls back the slot increment too
       throw new ApiError(409, "This offer has already been answered");
     }
 
-    const newAcceptedCount = request.unitsAccepted + 1;
-    const isFull = newAcceptedCount >= request.unitsNeeded;
+    // Re-read the real count after our own increment
+    const fresh = await tx.donationRequest.findUniqueOrThrow({
+      where: { id: request.id },
+      select: { unitsAccepted: true, unitsNeeded: true },
+    });
+
+    const isFull = fresh.unitsAccepted >= fresh.unitsNeeded;
 
     if (isFull) {
-      // Close the request only if it is still open at the expected count.
-      const fulfilled = await tx.donationRequest.updateMany({
-        where: {
-          id: request.id,
-          status: RequestStatus.OPEN,
-          unitsAccepted: newAcceptedCount,
-        },
+      // Other donors' offers stay NOTIFIED: if a no-show frees a slot, they can still accept
+      await tx.donationRequest.updateMany({
+        where: { id: request.id, status: RequestStatus.OPEN },
         data: { status: RequestStatus.FULFILLED },
-      });
-
-      if (fulfilled.count === 0) {
-        throw new ApiError(
-          409,
-          "The request changed while the final slot was being claimed",
-        );
-      }
-
-      // No need to leave offers available once all slots are taken.
-      await tx.donationMatch.updateMany({
-        where: {
-          requestId: request.id,
-          status: MatchStatus.NOTIFIED,
-        },
-        data: { status: MatchStatus.CANCELLED },
       });
     }
 
-    // Tell the requester that a donor has accepted.
+    // Tell the requester
     await tx.notification.create({
       data: {
         userId: request.requesterId,
@@ -298,47 +285,28 @@ const cancelNoShow = async (requesterId: string, matchId: string) => {
       );
     }
 
-    const request = match.request;
+    // Release one slot. Works for OPEN and FULFILLED (all slots taken) requests.
+    const released = await tx.donationRequest.updateMany({
+      where: {
+        id: match.request.id,
+        status: { in: [RequestStatus.OPEN, RequestStatus.FULFILLED] },
+        unitsAccepted: { gt: 0 },
+      },
+      data: { unitsAccepted: { decrement: 1 } },
+    });
 
-    if (
-      request.status !== RequestStatus.OPEN &&
-      request.status !== RequestStatus.FULFILLED
-    ) {
+    if (released.count === 0) {
       throw new ApiError(
         409,
         "The request is no longer available for another donor",
       );
     }
 
-    if (request.unitsAccepted < 1) {
-      throw new ApiError(
-        409,
-        "There are no accepted donor slots available to release",
-      );
-    }
-
-    // Release exactly one slot with a guarded update.
-    const released = await tx.donationRequest.updateMany({
-      where: {
-        id: request.id,
-        status: request.status,
-        unitsAccepted: request.unitsAccepted,
-      },
-      data: {
-        unitsAccepted: { decrement: 1 },
-        // Reopen a fulfilled request so another donor can accept.
-        ...(request.status === RequestStatus.FULFILLED && {
-          status: RequestStatus.OPEN,
-        }),
-      },
+    // A slot is free again, so a fulfilled request goes back to open
+    await tx.donationRequest.updateMany({
+      where: { id: match.request.id, status: RequestStatus.FULFILLED },
+      data: { status: RequestStatus.OPEN },
     });
-
-    if (released.count === 0) {
-      throw new ApiError(
-        409,
-        "The request changed while releasing this donor slot. Please try again.",
-      );
-    }
 
     const cancelled = await tx.donationMatch.updateMany({
       where: {

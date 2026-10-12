@@ -625,8 +625,27 @@ const cancelMyDonationRequest = async (
       throw new ApiError(404, "Donation request not found");
     }
 
-    if (existingRequest.status !== RequestStatus.OPEN) {
-      throw new ApiError(400, "Only open donation requests can be cancelled");
+    // A request whose slots are all taken is FULFILLED, but it can still be cancelled
+    if (
+      existingRequest.status !== RequestStatus.OPEN &&
+      existingRequest.status !== RequestStatus.FULFILLED
+    ) {
+      throw new ApiError(
+        400,
+        "Only open or fulfilled donation requests can be cancelled",
+      );
+    }
+
+    // Once a donor has actually donated, the request is part of the history
+    const completed = await tx.donationMatch.count({
+      where: { requestId, status: MatchStatus.COMPLETED },
+    });
+
+    if (completed > 0) {
+      throw new ApiError(
+        409,
+        "A donation for this request is already completed, so it can't be cancelled",
+      );
     }
 
     const accepted = await tx.donationMatch.findMany({
@@ -636,12 +655,16 @@ const cancelMyDonationRequest = async (
 
     // Guarded write: matches 0 rows if the request was closed by someone else in the meantime
     const updated = await tx.donationRequest.updateMany({
-      where: { id: requestId, requesterId, status: RequestStatus.OPEN },
+      where: {
+        id: requestId,
+        requesterId,
+        status: { in: [RequestStatus.OPEN, RequestStatus.FULFILLED] },
+      },
       data: { status: RequestStatus.CANCELLED },
     });
 
     if (updated.count === 0) {
-      throw new ApiError(409, "This request is no longer open");
+      throw new ApiError(409, "This request can no longer be cancelled");
     }
 
     await tx.donationMatch.updateMany({
