@@ -34,7 +34,6 @@ export default function LogoutButton() {
   return (
     <Button
       className="w-full"
-      nativeButton={false}
       onClick={handleLogout}
       disabled={isSubmitting}
     >

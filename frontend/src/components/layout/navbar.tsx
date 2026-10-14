@@ -19,10 +19,12 @@ import {
 } from "@/components/ui/sheet";
 
 import { env } from "@/env";
-import { navbarAfterLogin, navbarBeforeLogin } from "@/routes/navRoutes";
 import { userServices } from "@/service/user.service";
 import { NavbarLinks } from "./navLinks";
 import LogoutButton from "../common/LogoutButton";
+import { getNavbarAfterLogin, navbarBeforeLogin } from "@/routes/navRoutes";
+import { Suspense } from "react";
+import { NotificationBell, NotificationBellFallback } from "./notification-bell";
 
 export interface MenuItem {
   title: string;
@@ -96,10 +98,10 @@ function MobileMenuItem({ item }: { item: MenuItem }) {
 
 export default async function Navbar({ className }: NavbarProps) {
   const { data: session } = await userServices.getSessionServer();
-  console.log(session)
 
-  const isLoggedIn = Boolean(session?.user);
-  const menu = isLoggedIn ? navbarAfterLogin : navbarBeforeLogin;
+  const user = session?.user;
+  const isLoggedIn = Boolean(user);
+  const menu = user ? getNavbarAfterLogin(user.role) : navbarBeforeLogin;
 
   return (
     <section className={cn("border-b-2 border-primary py-4", className)}>
@@ -124,19 +126,17 @@ export default async function Navbar({ className }: NavbarProps) {
             </span>
           </Link>
 
-            {/* Navigation links */}
+          {/* Navigation links */}
           <NavbarLinks menu={menu} />
 
-          <div className="flex gap-2 justify-self-end">
+          <div className="flex items-center gap-2 justify-self-end">
             {isLoggedIn ? (
-              // <Button
-              //   size="sm"
-              //   render={<Link href="/dashboard" />}
-              //   nativeButton={false}
-              // >
-              //   Dashboard
-              // </Button>
-              <LogoutButton></LogoutButton>
+              <>
+                <Suspense fallback={<NotificationBellFallback />}>
+                  <NotificationBell />
+                </Suspense>
+                <LogoutButton />
+              </>
             ) : (
               <>
                 <Button
@@ -147,7 +147,6 @@ export default async function Navbar({ className }: NavbarProps) {
                 >
                   Login
                 </Button>
-
                 <Button
                   size="sm"
                   render={<Link href="/signup" />}
@@ -178,72 +177,79 @@ export default async function Navbar({ className }: NavbarProps) {
               </span>
             </Link>
 
-            <Sheet>
-              <SheetTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    aria-label="Open navigation menu"
-                  />
-                }
-              >
-                <Menu className="size-4" />
-              </SheetTrigger>
+            <div className="flex items-center gap-2">
+              {isLoggedIn && (
+                <Suspense fallback={<NotificationBellFallback />}>
+                  <NotificationBell />
+                </Suspense>
+              )}
+              <Sheet>
+                <SheetTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label="Open navigation menu"
+                    />
+                  }
+                >
+                  <Menu className="size-4" />
+                </SheetTrigger>
 
-              <SheetContent className="overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle>
-                    <Link href={logo.url} className="flex items-center gap-2">
-                      <Image
-                        src={logo.src}
-                        alt={logo.alt}
-                        width={32}
-                        height={32}
-                        className="h-auto w-8 dark:invert"
-                      />
+                <SheetContent className="overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>
+                      <Link href={logo.url} className="flex items-center gap-2">
+                        <Image
+                          src={logo.src}
+                          alt={logo.alt}
+                          width={32}
+                          height={32}
+                          className="h-auto w-8 dark:invert"
+                        />
 
-                      <span className="text-xl font-semibold tracking-tighter text-primary">
-                        {logo.title}
-                      </span>
-                    </Link>
-                  </SheetTitle>
-                </SheetHeader>
+                        <span className="text-xl font-semibold tracking-tighter text-primary">
+                          {logo.title}
+                        </span>
+                      </Link>
+                    </SheetTitle>
+                  </SheetHeader>
 
-                <div className="flex flex-col gap-6 p-4 pt-0">
-                  <Accordion className="flex w-full flex-col">
-                    {menu.map((item) => (
-                      <MobileMenuItem key={item.title} item={item} />
-                    ))}
-                  </Accordion>
+                  <div className="flex flex-col justify-between h-full gap-6 p-4 pt-0">
+                    <Accordion className="flex w-full flex-col">
+                      {menu.map((item) => (
+                        <MobileMenuItem key={item.title} item={item} />
+                      ))}
+                    </Accordion>
 
-                  <div className="flex flex-col gap-3">
-                    {isLoggedIn ? (
-                      <LogoutButton></LogoutButton>
-                    ) : (
-                      <>
-                        <Button
-                          variant="outline"
-                          className="w-full"
-                          render={<Link href="/login" />}
-                          nativeButton={false}
-                        >
-                          Login
-                        </Button>
+                    <div className="flex flex-col gap-3">
+                      {isLoggedIn ? (
+                        <LogoutButton></LogoutButton>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            render={<Link href="/login" />}
+                            nativeButton={false}
+                          >
+                            Login
+                          </Button>
 
-                        <Button
-                          className="w-full"
-                          render={<Link href="/signup" />}
-                          nativeButton={false}
-                        >
-                          Sign up
-                        </Button>
-                      </>
-                    )}
+                          <Button
+                            className="w-full"
+                            render={<Link href="/signup" />}
+                            nativeButton={false}
+                          >
+                            Sign up
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </div>

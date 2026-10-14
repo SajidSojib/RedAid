@@ -124,10 +124,39 @@ export function AreaSelector({
     }
   };
 
-  useEffect(() => {
-    void load("divisions", getAllDivisions(), setDivisions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  
+useEffect(() => {
+  let cancelled = false;
+
+  const fetchDivisions = async () => {
+    try {
+      const { data, error } = await getAllDivisions();
+
+      if (cancelled) return;
+
+      if (error || !data) {
+        toast.error("Couldn't load locations. Please try again.");
+      } else {
+        setDivisions(data);
+      }
+    } catch {
+      if (!cancelled) {
+        toast.error("Couldn't load locations. Please try again.");
+      }
+    } finally {
+      if (!cancelled) {
+        setLoading(null);
+      }
+    }
+  };
+
+  void fetchDivisions();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
+
 
   const buildArea = (upId: string, unId: string): SelectedArea | null => {
     const upazila = upazilas.find((u) => u.id === upId);
