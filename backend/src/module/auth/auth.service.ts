@@ -24,7 +24,7 @@ type RegisterBankOwnerInput = {
   email: string;
   password: string;
   image?: string | null;
-  bloodType: BloodType;
+  bloodType: BloodType
   phone: string;
   bank: {
     name: string;

@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Button } from "../ui/button";
-import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -35,7 +34,6 @@ export default function LogoutButton() {
   return (
     <Button
       className="w-full"
-      render={<Link href="/logout" />}
       nativeButton={false}
       onClick={handleLogout}
       disabled={isSubmitting}

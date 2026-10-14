@@ -3,7 +3,7 @@ import { ApiError } from "../../utils/apiError";
 
 
 type CreateDivisionInput = {
-  id: string;
+  id: string
   name: string;
   bn_name: string;
   url: string;
@@ -31,6 +31,7 @@ type CreateUnionInput = {
   url: string;
   upazilaId: string;
 };
+
 
 const createDivision = async (payload: CreateDivisionInput) => {
   const existing = await prisma.division.findUnique({

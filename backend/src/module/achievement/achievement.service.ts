@@ -6,7 +6,7 @@ import {
   Role,
 } from "../../../generated/prisma/enums";
 import type { Prisma } from "../../../generated/prisma/client";
-import { certificateCode, MILESTONES } from "../../types/constant/milestones";
+import { MILESTONES } from "../../types/constant/milestones";
 import config from "../../config";
 
 type Tx = Prisma.TransactionClient;
@@ -154,9 +154,7 @@ const getCertificate = async (
     throw new ApiError(404, "Certificate not found");
   }
 
-  const milestone = MILESTONES.find(
-    (m) => certificateCode(m.count) === achievement.code,
-  );
+  const milestone = MILESTONES.find((m) => m.badge === achievement.code);
 
   return {
     verificationCode: achievement.id,
@@ -180,9 +178,7 @@ const verifyCertificate = async (code: string) => {
     throw new ApiError(404, "No certificate found for this code");
   }
 
-  const milestone = MILESTONES.find(
-    (m) => certificateCode(m.count) === achievement.code,
-  );
+  const milestone = MILESTONES.find((m) => m.badge === achievement.code);
 
   return {
     valid: true,

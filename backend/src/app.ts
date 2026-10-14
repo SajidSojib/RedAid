@@ -11,7 +11,7 @@ import { requestRouter } from "./module/request/request.route";
 import { profileRouter } from "./module/profile/profile.route";
 import { matchesRouter } from "./module/match/match.route";
 import { notificationRouter } from "./module/notification/notification.route";
-import { achievementRouter } from "./module/achievement/achivement.route";
+import { achievementRouter } from "./module/achievement/achievement.route";
 import { donationRouter } from "./module/donation/donation.route";
 
 const app: Application = express();

@@ -129,13 +129,14 @@ export default async function Navbar({ className }: NavbarProps) {
 
           <div className="flex gap-2 justify-self-end">
             {isLoggedIn ? (
-              <Button
-                size="sm"
-                render={<Link href="/dashboard" />}
-                nativeButton={false}
-              >
-                Dashboard
-              </Button>
+              // <Button
+              //   size="sm"
+              //   render={<Link href="/dashboard" />}
+              //   nativeButton={false}
+              // >
+              //   Dashboard
+              // </Button>
+              <LogoutButton></LogoutButton>
             ) : (
               <>
                 <Button

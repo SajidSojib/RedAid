@@ -6,4 +6,3 @@ export const MILESTONES = [
   { count: 15, badge: "PLATINUM", certificate: true },
 ] as const;
 
-export const certificateCode = (count: number) => `CERT_${count}`;
