@@ -2,6 +2,7 @@ import { BloodType, Role } from "../../../generated/prisma/enums";
 import { auth as betterAuth } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../utils/apiError";
+import { validateServiceAreas } from "../../utils/validateServiceAreas";
 
 type ServiceAreaInput = {
   upazilaId: string;
@@ -15,7 +16,7 @@ type RegisterUserInput = {
   image?: string | null;
   bloodType: BloodType
   phone: string;
-  lastDonationDate: string;
+  lastDonationDate?: string | null;
   serviceAreas: ServiceAreaInput[];
 };
 
@@ -42,6 +43,17 @@ type LoginUserInput = {
   password: string;
 };
 
+const assertEmailAvailable = async (email: string) => {
+  const existing = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+    select: { id: true },
+  });
+
+  if (existing) {
+    throw new ApiError(409, "An account with this email already exists");
+  }
+};
+
 const loginUser = async (payload: LoginUserInput) => {
   const { headers, response } = await betterAuth.api.signInEmail({
     body: { email: payload.email, password: payload.password },
@@ -60,67 +72,21 @@ const loginUser = async (payload: LoginUserInput) => {
 
 
 const registerUser = async (payload: RegisterUserInput) => {
-  const { serviceAreas } = payload;
+  const serviceAreas = await validateServiceAreas(payload.serviceAreas);
 
-  if (serviceAreas.length < 1) {
-    throw new ApiError(
-      400,
-      "You must select at least 1 service area",
-    );
+  // null / "" / missing means the donor has never donated
+  const lastDonationDate = payload.lastDonationDate
+    ? new Date(payload.lastDonationDate)
+    : undefined;
+
+  if (
+    lastDonationDate &&
+    (Number.isNaN(lastDonationDate.getTime()) || lastDonationDate > new Date())
+  ) {
+    throw new ApiError(400, "Invalid last donation date");
   }
 
-  const uniqueAreas = new Set(
-    serviceAreas.map(
-      (area) => `${area.upazilaId}:${area.unionId ?? "ALL"}`,
-    ),
-  );
-
-  if (uniqueAreas.size !== serviceAreas.length) {
-    throw new ApiError(400, "Duplicate service areas are not allowed");
-  }
-
-  const upazilaIds = [
-    ...new Set(serviceAreas.map((area) => area.upazilaId)),
-  ];
-
-  const upazilas = await prisma.upazila.findMany({
-    where: {
-      id: { in: upazilaIds },
-    },
-    select: { id: true },
-  });
-
-  if (upazilas.length !== upazilaIds.length) {
-    throw new ApiError(400, "One or more selected upazilas do not exist");
-  }
-
-  // Verify that each selected union belongs to its selected upazila
-  const unionAreas = serviceAreas.filter(
-    (area): area is ServiceAreaInput & { unionId: string } =>
-      Boolean(area.unionId),
-  );
-
-  if (unionAreas.length > 0) {
-    const unions = await prisma.union.findMany({
-      where: {
-        OR: unionAreas.map((area) => ({
-          id: area.unionId,
-          upazilaId: area.upazilaId,
-        })),
-      },
-      select: {
-        id: true,
-        upazilaId: true,
-      },
-    });
-
-    if (unions.length !== unionAreas.length) {
-      throw new ApiError(
-        400,
-        "One or more selected unions do not belong to their upazilas",
-      );
-    }
-  }
+  await assertEmailAvailable(payload.email);
 
   const result = await betterAuth.api.signUpEmail({
     body: {
@@ -130,7 +96,7 @@ const registerUser = async (payload: RegisterUserInput) => {
       bloodType: payload.bloodType,
       image: payload.image || undefined,
       phone: payload.phone,
-      lastDonationDate: new Date(payload.lastDonationDate),
+      lastDonationDate,
     },
   });
 
@@ -140,7 +106,7 @@ const registerUser = async (payload: RegisterUserInput) => {
       data: serviceAreas.map((area) => ({
         donorId: result.user.id,
         upazilaId: area.upazilaId,
-        unionId: area.unionId || null,
+        unionId: area.unionId,
       })),
     });
   } catch (error) {
@@ -160,10 +126,9 @@ const registerUser = async (payload: RegisterUserInput) => {
 
   return {
     user: result.user,
-    serviceAreas
+    serviceAreas,
   };
 };
-
 
 
 const registerBankOwner = async (

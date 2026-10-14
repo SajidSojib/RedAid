@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../utils/apiError";
 import { BloodType, VerificationStatus } from "../../../generated/prisma/enums";
+import { validateServiceAreas } from "../../utils/validateServiceAreas";
 
 type ServiceAreaInput = {
   upazilaId: string;
@@ -46,58 +47,17 @@ const getMyProfile = async (userId: string) => {
   return user;
 };
 
-
-const validateServiceAreas = async (serviceAreas: ServiceAreaInput[]) => {
-  if (serviceAreas.length === 0) {
-    throw new ApiError(400, "You must select at least one service area");
-  }
-
-  // Duplicate = same upazila AND same union (two unions in one upazila is fine)
-  const keys = serviceAreas.map((a) => `${a.upazilaId}:${a.unionId ?? "ALL"}`);
-  if (new Set(keys).size !== keys.length) {
-    throw new ApiError(400, "Duplicate service areas are not allowed");
-  }
-
-  const upazilaIds = [...new Set(serviceAreas.map((a) => a.upazilaId))];
-  const unionIds = [
-    ...new Set(serviceAreas.flatMap((a) => (a.unionId ? [a.unionId] : []))),
-  ];
-
-  const [upazilas, unions] = await Promise.all([
-    prisma.upazila.findMany({
-      where: { id: { in: upazilaIds } },
-      select: { id: true },
-    }),
-    unionIds.length > 0
-      ? prisma.union.findMany({
-          where: { id: { in: unionIds } },
-          select: { id: true, upazilaId: true },
-        })
-      : Promise.resolve([] as { id: string; upazilaId: string }[]),
-  ]);
-
-  if (upazilas.length !== upazilaIds.length) {
-    throw new ApiError(400, "One or more selected upazilas do not exist");
-  }
-  if (unions.length !== unionIds.length) {
-    throw new ApiError(400, "One or more selected unions do not exist");
-  }
-
-  const parentOf = new Map(unions.map((u) => [u.id, u.upazilaId]));
-  for (const area of serviceAreas) {
-    if (area.unionId && parentOf.get(area.unionId) !== area.upazilaId) {
-      throw new ApiError(
-        400,
-        "A selected union does not belong to its upazila",
-      );
-    }
-  }
-};
+const profileInclude = {
+  donorServiceAreas: {
+    include: { upazila: true, union: true },
+  },
+} as const;
 
 const updateMyProfile = async (
   userId: string,
   payload: UpdateMyProfileInput,
 ) => {
+  // undefined = not sent, null/"" = clear it, otherwise parse it
   const lastDonationDate =
     payload.lastDonationDate === undefined
       ? undefined
@@ -116,23 +76,41 @@ const updateMyProfile = async (
     }
   }
 
+  if (
+    payload.bloodType !== undefined &&
+    !Object.values(BloodType).includes(payload.bloodType)
+  ) {
+    throw new ApiError(400, "Invalid blood type");
+  }
+
+  const name = payload.name?.trim();
+  const phone = payload.phone?.trim();
+
+  if (payload.name !== undefined && !name) {
+    throw new ApiError(400, "Name cannot be empty");
+  }
+  if (payload.phone !== undefined && !phone) {
+    throw new ApiError(400, "Phone number cannot be empty");
+  }
+
   const updateData = {
-    ...(payload.name !== undefined && { name: payload.name }),
-    ...(payload.phone !== undefined && { phone: payload.phone }),
-    ...(payload.image !== undefined && { image: payload.image }),
+    ...(name !== undefined && { name }),
+    ...(phone !== undefined && { phone }),
+    ...(payload.image !== undefined && { image: payload.image || null }),
     ...(payload.bloodType !== undefined && { bloodType: payload.bloodType }),
     ...(lastDonationDate !== undefined && { lastDonationDate }),
   };
 
-  const serviceAreas = payload.serviceAreas;
+  const hasAreaUpdate = payload.serviceAreas !== undefined;
 
-  if (Object.keys(updateData).length === 0 && serviceAreas === undefined) {
+  if (Object.keys(updateData).length === 0 && !hasAreaUpdate) {
     throw new ApiError(400, "Provide at least one field to update");
   }
 
-  if (serviceAreas !== undefined) {
-    await validateServiceAreas(serviceAreas);
-  }
+  // Returns the cleaned list (unionId is a string or null), so insert this, not the raw payload
+  const serviceAreas = hasAreaUpdate
+    ? await validateServiceAreas(payload.serviceAreas!)
+    : undefined;
 
   return prisma.$transaction(async (tx) => {
     const current = await tx.user.findUnique({
@@ -167,24 +145,23 @@ const updateMyProfile = async (
       await tx.user.update({ where: { id: userId }, data: updateData });
     }
 
-    if (serviceAreas !== undefined) {
+    if (serviceAreas) {
       await tx.donorServiceArea.deleteMany({ where: { donorId: userId } });
       await tx.donorServiceArea.createMany({
-        data: serviceAreas.map((a) => ({
+        data: serviceAreas.map((area) => ({
           donorId: userId,
-          upazilaId: a.upazilaId,
-          unionId: a.unionId ?? null,
+          upazilaId: area.upazilaId,
+          unionId: area.unionId,
         })),
       });
     }
 
     return tx.user.findUniqueOrThrow({
       where: { id: userId },
-      include: {donorServiceAreas : true},
+      include: profileInclude,
     });
   });
 };
-
 const getMyBank = async (userId: string) => {
   const bank = await prisma.bloodBank.findUnique({
     where: { ownerId: userId },

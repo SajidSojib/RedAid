@@ -25,6 +25,7 @@ import {
 import { AreaSelector } from "./area-selector";
 import { FormSection } from "./form-section";
 import { ImageUploadField } from "./image-upload-field";
+import { addServiceArea } from "@/lib/service-area";
 
 export function DonorSignupForm({
   onSuccess,
@@ -280,16 +281,20 @@ export function DonorSignupForm({
                     withUnion
                     onSelect={(area) => {
                       if (!area) return;
-                      const exists = areas.some(
-                        (a) =>
-                          a.upazilaId === area.upazilaId &&
-                          a.unionId === area.unionId,
-                      );
-                      if (exists) {
-                        toast.error("You've already added this area");
+
+                      const result = addServiceArea(areas, area);
+                      if (!result.ok) {
+                        toast.error(result.message);
                         return;
                       }
-                      field.pushValue(area);
+
+                      field.setValue(result.areas);
+
+                      if (result.replaced > 0) {
+                        toast.info(
+                          `Replaced ${result.replaced} specific union${result.replaced > 1 ? "s" : ""} with the whole upazila`,
+                        );
+                      }
                     }}
                   />
                 )}
