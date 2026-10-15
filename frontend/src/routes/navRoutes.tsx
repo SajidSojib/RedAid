@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import type { MenuItem } from "@/components/layout/navbar";
+import { ROLE } from "@/constants/roles";
 
 export type UserRole = "USER" | "BANK" | "ADMIN";
 
@@ -96,6 +97,7 @@ export const navbarBeforeLogin: MenuItem[] = baseMenu;
 
 export const getNavbarAfterLogin = (role?: string | null): MenuItem[] => [
   ...baseMenu,
+  ...(role === ROLE.USER ? [{ title: "Add Request", url: "/add-request" }] : []),
   {
     title: "Dashboard",
     url: "#",

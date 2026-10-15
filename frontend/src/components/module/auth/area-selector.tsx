@@ -84,12 +84,14 @@ type AreaSelectorProps = {
   // "single": the selection is reported as soon as an upazila is chosen (banks pick one)
   mode: "add" | "single";
   withUnion?: boolean;
+  wholeLabel?: string;
   onSelect: (area: SelectedArea | null) => void;
 };
 
 export function AreaSelector({
   mode,
   withUnion = false,
+  wholeLabel = "Whole upazila (all unions)",
   onSelect,
 }: AreaSelectorProps) {
   const [divisions, setDivisions] = useState<LocationOption[]>([]);
@@ -124,39 +126,37 @@ export function AreaSelector({
     }
   };
 
-  
-useEffect(() => {
-  let cancelled = false;
+  useEffect(() => {
+    let cancelled = false;
 
-  const fetchDivisions = async () => {
-    try {
-      const { data, error } = await getAllDivisions();
+    const fetchDivisions = async () => {
+      try {
+        const { data, error } = await getAllDivisions();
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (error || !data) {
-        toast.error("Couldn't load locations. Please try again.");
-      } else {
-        setDivisions(data);
+        if (error || !data) {
+          toast.error("Couldn't load locations. Please try again.");
+        } else {
+          setDivisions(data);
+        }
+      } catch {
+        if (!cancelled) {
+          toast.error("Couldn't load locations. Please try again.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(null);
+        }
       }
-    } catch {
-      if (!cancelled) {
-        toast.error("Couldn't load locations. Please try again.");
-      }
-    } finally {
-      if (!cancelled) {
-        setLoading(null);
-      }
-    }
-  };
+    };
 
-  void fetchDivisions();
+    void fetchDivisions();
 
-  return () => {
-    cancelled = true;
-  };
-}, []);
-
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const buildArea = (upId: string, unId: string): SelectedArea | null => {
     const upazila = upazilas.find((u) => u.id === upId);
@@ -207,6 +207,11 @@ useEffect(() => {
     if (mode === "single") onSelect(buildArea(id, WHOLE_UPAZILA));
   };
 
+  const handleUnion = (id: string) => {
+    setUnionId(id);
+    if (mode === "single") onSelect(buildArea(upazilaId, id));
+  };
+
   const handleAdd = () => {
     const area = buildArea(upazilaId, unionId);
     if (!area) return;
@@ -251,7 +256,7 @@ useEffect(() => {
           <LocationSelect
             label="Union"
             value={unionId}
-            onChange={setUnionId}
+            onChange={handleUnion}
             options={[
               {
                 id: WHOLE_UPAZILA,

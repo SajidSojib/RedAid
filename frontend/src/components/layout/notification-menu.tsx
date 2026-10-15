@@ -18,11 +18,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import type { AppNotification } from "@/service/notification.service";
+import { type AppNotification } from "@/service/notification.service";
 import {
+  getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/action/notification.action";
+import { toast } from "sonner";
 
 const POLL_MS = 60_000;
 
@@ -95,15 +97,13 @@ export function NotificationMenu({
     if (document.visibilityState !== "visible") return;
 
     try {
-      const res = await fetch("/api/notifications/unread-count", {
-        cache: "no-store",
-      });
-      if (!res.ok) return;
+      const { data, error } = await getUnreadNotificationCount();
 
-      const { unreadCount: latest } = (await res.json()) as {
-        unreadCount: number;
-      };
-      if (latest !== countRef.current) router.refresh();
+      if (error || !data) return;
+
+      if (data.unreadCount !== countRef.current) {
+        router.refresh();
+      }
     } catch {
       // offline or backend down, try again on the next tick
     }
@@ -130,14 +130,23 @@ export function NotificationMenu({
 
     startTransition(async () => {
       applyRead({ type: "one", id: n.id });
-      await markNotificationRead(n.id);
+      const { error } = await markNotificationRead(n.id);
+      if (error) toast.error(error.message);
     });
   };
 
   const markAll = () => {
     startTransition(async () => {
       applyRead({ type: "all" });
-      await markAllNotificationsRead();
+      const { error } = await markAllNotificationsRead();
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      // Backstop in case the action's refresh() doesn't reach the navbar
+      router.refresh();
     });
   };
 

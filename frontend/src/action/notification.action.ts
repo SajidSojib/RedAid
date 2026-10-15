@@ -16,3 +16,7 @@ export const markAllNotificationsRead = async () => {
   refresh();
   return result;
 };
+
+export const getUnreadNotificationCount = async () => {
+  return notificationServices.getUnreadCount();
+};

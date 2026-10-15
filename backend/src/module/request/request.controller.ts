@@ -22,7 +22,6 @@ const createDonationRequest = asyncHandler(
         ? "Donation request created successfully. Matching donors have been notified."
         : "Donation request created successfully. No eligible donors were found yet.",
     );
-
     return response.send(res);
   },
 );

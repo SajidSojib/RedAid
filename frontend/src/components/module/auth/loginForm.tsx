@@ -16,20 +16,9 @@ const loginSchema = z.object({
   email: z.email({
     message: "Enter a valid email address",
   }),
-  password: z
-    .string()
-    .min(8, {
-      message: "Password must be at least 8 characters long",
-    })
-    .regex(/[A-Z]/, {
-      message: "Password must contain at least one uppercase letter (A-Z)",
-    })
-    .regex(/[a-z]/, {
-      message: "Password must contain at least one lowercase letter (a-z)",
-    })
-    .regex(/[^A-Za-z0-9]/, {
-      message: "Password must contain at least one special character",
-    }),
+  password: z.string().min(1, {
+    message: "Password is required",
+  }),
 });
 
 // Only allow redirects to pages inside this site

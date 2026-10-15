@@ -249,23 +249,23 @@ const createDonationRequest = async (
   assertEnum(BloodType, payload.bloodType, "blood type");
   if (payload.urgency !== undefined)
     assertEnum(Urgency, payload.urgency, "urgency");
-
+  
   validateUnits(payload.unitsNeeded);
   validateCoordinates(payload.latitude, payload.longitude);
-
+  
   const requester = await prisma.user.findUnique({
     where: { id: requesterId },
     select: { phone: true },
   });
-
+  
   if (!requester) {
     throw new ApiError(404, "User not found");
   }
-
+  
   const openCount = await prisma.donationRequest.count({
     where: { requesterId, status: RequestStatus.OPEN },
   });
-
+  
   if (openCount >= MAX_OPEN_REQUESTS_PER_USER) {
     throw new ApiError(
       409,
@@ -304,11 +304,11 @@ const createDonationRequest = async (
         union: areaSelect,
       },
     });
-
+    
     // Try the union first. If nobody is eligible there, widen to the whole upazila straight away.
     let searchScope: Scope = request.unionId ? "UNION" : "UPAZILA";
     let notifiedDonors = await notifyDonors(tx, request, searchScope);
-
+    
     if (notifiedDonors === 0 && searchScope === "UNION") {
       searchScope = "UPAZILA";
       notifiedDonors = await notifyDonors(tx, request, searchScope);
