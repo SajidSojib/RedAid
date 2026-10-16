@@ -11,6 +11,7 @@ export type IconKey =
   | "flag"
   | "users";
 
+
 export type DashboardRoute = {
   title: string;
   description: string;
@@ -95,8 +96,14 @@ export const isKnownRole = (role: unknown): role is UserRole =>
 export const getDashboardHome = (role: UserRole) =>
   DASHBOARD_ROUTES[role][0].url;
 
-const matchesPath = (pathname: string, prefix: string) =>
+export const matchesPath = (pathname: string, prefix: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
+
+// Links shown in the dashboard sidebar for a role
+export const getSidebarRoutes = (role?: string | null) =>
+  isKnownRole(role)
+    ? DASHBOARD_ROUTES[role].filter((route) => !route.hidden)
+    : [];
 
 // The roles that may open this path. Empty means it isn't a listed dashboard page.
 export const getPathOwners = (pathname: string): UserRole[] =>

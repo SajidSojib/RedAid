@@ -5,9 +5,9 @@ import { Button } from "../ui/button";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { Loader } from "lucide-react";
+import { Loader, LogOut } from "lucide-react";
 
-export default function LogoutButton() {
+export default function LogoutButton({ className, icon=false }: { className?: string; icon?: boolean }) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const router = useRouter();
 
@@ -33,12 +33,14 @@ export default function LogoutButton() {
   };
   return (
     <Button
+      className={className}
       onClick={handleLogout}
       disabled={isSubmitting}
     >
       {isSubmitting && (
         <Loader className="h-4 w-4 animate-spin" />
       )}
+      {(icon && !isSubmitting) && <LogOut className="h-4 w-4" />}
       Logout
     </Button>
   );
