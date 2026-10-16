@@ -5,9 +5,7 @@ export default function MainLayout({children}: {children: React.ReactNode}) {
   return (
     <>
         <div>
-            <nav>
                 <Navbar></Navbar>
-            </nav>
             <main>
                 {children}
             </main>

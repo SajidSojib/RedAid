@@ -25,6 +25,7 @@ import LogoutButton from "../common/LogoutButton";
 import { getNavbarAfterLogin, navbarBeforeLogin } from "@/routes/navRoutes";
 import { Suspense } from "react";
 import { NotificationBell, NotificationBellFallback } from "./notification-bell";
+import { ModeToggle } from "../common/modeToggle";
 
 export interface MenuItem {
   title: string;
@@ -104,7 +105,12 @@ export default async function Navbar({ className }: NavbarProps) {
   const menu = user ? getNavbarAfterLogin(user.role) : navbarBeforeLogin;
 
   return (
-    <section className={cn("border-b-2 border-primary py-4", className)}>
+    <section
+      className={cn(
+        "sticky top-0 z-40 flex h-(--header-height) items-center border-b-2 border-primary bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/5",
+        className,
+      )}
+    >
       <div className="container mx-auto">
         {/* Desktop navigation */}
         <nav className="hidden grid-cols-[1fr_auto_1fr] items-center lg:grid">
@@ -135,10 +141,12 @@ export default async function Navbar({ className }: NavbarProps) {
                 <Suspense fallback={<NotificationBellFallback />}>
                   <NotificationBell />
                 </Suspense>
+                <ModeToggle />
                 <LogoutButton />
               </>
             ) : (
               <>
+                <ModeToggle />
                 <Button
                   variant="outline"
                   size="sm"
@@ -183,6 +191,7 @@ export default async function Navbar({ className }: NavbarProps) {
                   <NotificationBell />
                 </Suspense>
               )}
+              <ModeToggle />
               <Sheet>
                 <SheetTrigger
                   render={

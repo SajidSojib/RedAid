@@ -145,7 +145,6 @@ export function NotificationMenu({
         return;
       }
 
-      // Backstop in case the action's refresh() doesn't reach the navbar
       router.refresh();
     });
   };
@@ -157,16 +156,16 @@ export function NotificationMenu({
       <PopoverTrigger
         render={
           <Button
-            variant="ghost"
+            variant={count > 0 ? "secondary" : "outline"}
             size="icon"
-            className="relative"
+            className="relative cursor-pointer"
             aria-label={
               count > 0 ? `Notifications, ${count} unread` : "Notifications"
             }
           />
         }
       >
-        <Bell className="size-4" />
+        <Bell className={`size-4 ${count > 0 && "text-primary"}`} />
         {count > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground">
             {count > 9 ? "9+" : count}

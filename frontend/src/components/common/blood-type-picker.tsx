@@ -32,10 +32,12 @@ export function BloodTypePicker({
               aria-checked={active}
               onClick={() => field.handleChange(type.value)}
               className={cn(
-                "h-11 rounded-md border text-sm font-medium transition-colors",
+                "h-11 rounded-md border text-sm font-medium",
+                "transition-all duration-300 ease-in-out",
+                "hover:-translate-y-1 hover:shadow-sm hover:shadow-primary hover",
                 active
                   ? "border-primary bg-primary text-primary-foreground"
-                  : "border-input bg-background hover:bg-muted",
+                  : "border-input bg-background hover:bg-secondary/30 hover",
               )}
             >
               {type.label}

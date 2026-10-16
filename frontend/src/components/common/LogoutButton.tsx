@@ -33,7 +33,6 @@ export default function LogoutButton() {
   };
   return (
     <Button
-      className="w-full"
       onClick={handleLogout}
       disabled={isSubmitting}
     >

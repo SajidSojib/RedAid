@@ -27,4 +27,10 @@ router.patch(
   matchesControllers.cancelNoShow,
 );
 
+router.post(
+  "/requests/:requestId/volunteer",
+  auth(Role.USER),
+  matchesControllers.volunteerForRequest,
+);
+
 export const matchesRouter: Router = router;

@@ -6,18 +6,14 @@ import { Loader, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
-  Field,
   FieldError,
   FieldGroup,
-  FieldLabel,
 } from "@/components/ui/field";
 import { InputField } from "@/components/common/inputField";
 import { registerUser } from "@/action/user.action";
 import type { RegisterUserInput } from "@/service/user.service";
 import { useImageUpload } from "@/hooks/use-image-upload";
-import { cn } from "@/lib/utils";
 import {
-  BLOOD_TYPE_OPTIONS,
   MAX_SERVICE_AREAS,
   donorSignupSchema,
   type ServiceAreaValue,
@@ -26,6 +22,7 @@ import { AreaSelector } from "./area-selector";
 import { FormSection } from "./form-section";
 import { ImageUploadField } from "./image-upload-field";
 import { addServiceArea } from "@/lib/service-area";
+import { BloodTypePicker } from "@/components/common/blood-type-picker";
 
 export function DonorSignupForm({
   onSuccess,
@@ -189,38 +186,8 @@ export function DonorSignupForm({
         <FieldGroup className="gap-5">
           <form.Field name="bloodType">
             {(field) => {
-              const invalid = field.state.meta.errors.length > 0;
               return (
-                <Field data-invalid={invalid}>
-                  <FieldLabel>Blood type</FieldLabel>
-                  <div
-                    role="radiogroup"
-                    aria-label="Blood type"
-                    className="grid grid-cols-4 gap-2"
-                  >
-                    {BLOOD_TYPE_OPTIONS.map((type) => {
-                      const active = field.state.value === type.value;
-                      return (
-                        <button
-                          key={type.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={active}
-                          onClick={() => field.handleChange(type.value)}
-                          className={cn(
-                            "h-11 rounded-md border text-sm font-medium transition-colors",
-                            active
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-input bg-background hover:bg-muted",
-                          )}
-                        >
-                          {type.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {invalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
+                <BloodTypePicker field={field} label="Blood type needed"></BloodTypePicker>
               );
             }}
           </form.Field>

@@ -47,6 +47,7 @@ const getAllDonationRequests = asyncHandler(
   async (req: Request, res: Response) => {
     const result = await requestServices.getAllDonationRequests(
       req.query as unknown as RequestFilters,
+      req.user ? { id: req.user.id, role: req.user.role } : undefined,
     );
 
     const response = new ApiResponse(

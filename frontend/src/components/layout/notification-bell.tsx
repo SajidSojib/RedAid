@@ -6,7 +6,7 @@ import { NotificationMenu } from "./notification-menu";
 // Shown while the notifications load, so the navbar never waits on them
 export function NotificationBellFallback() {
   return (
-    <Button variant="ghost" size="icon" disabled aria-label="Notifications">
+    <Button variant="outline" size="icon-lg" disabled aria-label="Notifications">
       <Bell className="size-4" />
     </Button>
   );

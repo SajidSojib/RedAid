@@ -8,9 +8,11 @@ import {
 } from "../../../generated/prisma/enums";
 import { getEligibility } from "../../utils/eligiblity";
 import { BloodLabel } from "../../types/constant/bloodLabel";
+import { Prisma } from "../../../generated/prisma/client";
+import { COMPATIBLE_Donors } from "../../types/constant/compatibleDonors";
 
 // ---------- Types ----------
-
+type Tx = Prisma.TransactionClient;
 type GetMyOffersFilters = {
   status?: MatchStatus;
 };
@@ -67,7 +69,7 @@ const getMyOffers = async (
 
 // ---------- 2. Accept an offer ----------
 
-const acceptOffer = async (donorId: string, matchId: string) => {
+const acceptMatch = async (tx: Tx, donorId: string, matchId: string) => {
   return prisma.$transaction(async (tx) => {
     const match = await tx.donationMatch.findFirst({
       where: { id: matchId, donorId },
@@ -214,6 +216,9 @@ const acceptOffer = async (donorId: string, matchId: string) => {
   });
 };
 
+const acceptOffer = (donorId: string, matchId: string) =>
+  prisma.$transaction((tx) => acceptMatch(tx, donorId, matchId));
+
 // ---------- 3. Decline an offer ----------
 
 const declineOffer = async (donorId: string, matchId: string) => {
@@ -337,9 +342,73 @@ const cancelNoShow = async (requesterId: string, matchId: string) => {
   });
 };
 
+// "I can donate" from the public requests page. Works for donors who were notified
+// and for donors who weren't. Either way it ends in the normal accept logic.
+const volunteerForRequest = async (donorId: string, requestId: string) => {
+  return prisma.$transaction(async (tx) => {
+    const request = await tx.donationRequest.findUnique({
+      where: { id: requestId },
+      select: { id: true, requesterId: true, status: true, bloodType: true },
+    });
+
+    if (!request) {
+      throw new ApiError(404, "Donation request not found");
+    }
+
+    if (request.requesterId === donorId) {
+      throw new ApiError(400, "You can't donate to your own request");
+    }
+
+    if (request.status !== RequestStatus.OPEN) {
+      throw new ApiError(409, "This donation request is no longer open");
+    }
+
+    const existing = await tx.donationMatch.findUnique({
+      where: { requestId_donorId: { requestId, donorId } },
+      select: { id: true, status: true },
+    });
+
+    if (existing) {
+      // Notified earlier: this is just the normal accept
+      if (existing.status === MatchStatus.NOTIFIED) {
+        return acceptMatch(tx, donorId, existing.id);
+      }
+      if (
+        existing.status === MatchStatus.ACCEPTED ||
+        existing.status === MatchStatus.COMPLETED
+      ) {
+        throw new ApiError(409, "You have already accepted this request");
+      }
+      throw new ApiError(409, "You can no longer respond to this request");
+    }
+
+    const donor = await tx.user.findUnique({
+      where: { id: donorId },
+      select: { bloodType: true },
+    });
+
+    if (!donor?.bloodType) {
+      throw new ApiError(400, "Add your blood type to your profile before donating");
+    }
+
+    if (!COMPATIBLE_Donors[request.bloodType].includes(donor.bloodType)) {
+      throw new ApiError(403, "Your blood type can't donate to this patient");
+    }
+
+    // Account status, email, 90-day eligibility, one-at-a-time and the slot claim
+    // are all checked by acceptMatch. If it throws, this new match is rolled back too.
+    const match = await tx.donationMatch.create({
+      data: { requestId, donorId },
+    });
+
+    return acceptMatch(tx, donorId, match.id);
+  });
+};
+
 export const matchesServices = {
   getMyOffers,
   acceptOffer,
   declineOffer,
   cancelNoShow,
+  volunteerForRequest,
 };

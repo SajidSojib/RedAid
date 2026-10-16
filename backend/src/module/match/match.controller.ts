@@ -66,9 +66,28 @@ const cancelNoShow = asyncHandler(async (req: Request, res: Response) => {
   return response.send(res);
 });
 
+
+const volunteerForRequest = asyncHandler(
+  async (req: Request, res: Response) => {
+    const match = await matchesServices.volunteerForRequest(
+      req.user!.id,
+      req.params.requestId as string,
+    );
+
+    const response = new ApiResponse(
+      200,
+      match,
+      "You accepted this request. The requester has been notified.",
+    );
+
+    return response.send(res);
+  },
+);
+
 export const matchesControllers = {
   getMyOffers,
   acceptOffer,
   declineOffer,
   cancelNoShow,
+  volunteerForRequest,
 };

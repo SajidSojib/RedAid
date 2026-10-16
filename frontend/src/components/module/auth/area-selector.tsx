@@ -224,7 +224,7 @@ export function AreaSelector({
   };
 
   return (
-    <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
+    <div className="space-y-4 rounded-lg border bg-muted/30 shadow-md p-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <LocationSelect
           label="Division"

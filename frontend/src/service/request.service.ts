@@ -1,4 +1,5 @@
 import { env } from "@/env";
+import { authedRequest } from "@/lib/server-api";
 import { cookies } from "next/headers";
 
 export type RequestUrgency = "NORMAL" | "URGENT" | "CRITICAL";
@@ -19,6 +20,41 @@ export type CreateRequestResult = {
   request: { id: string; status: string };
   notifiedDonors: number;
   searchScope: "UNION" | "UPAZILA";
+};
+
+type LocationRef = { id: string; name: string; bn_name: string };
+
+export type RequestViewer = {
+  isOwner: boolean;
+  matchStatus: "NOTIFIED" | "ACCEPTED" | "COMPLETED" | "CANCELLED" | null;
+  canRespond: boolean;
+  blockedReason: string | null;
+};
+
+export type FeedRequest = {
+  id: string;
+  bloodType: string;
+  unitsNeeded: number;
+  unitsAccepted: number;
+  urgency: RequestUrgency;
+  status: string;
+  hospitalName: string | null;
+  createdAt: string;
+  upazila: LocationRef;
+  union: LocationRef | null;
+  patientName?: string | null; // only present for logged-in users
+  note?: string | null;
+  viewer: RequestViewer | null;
+};
+
+export type FeedPayload = {
+  requests: FeedRequest[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 };
 
 const API_URL = env.NEXT_PUBLIC_API_URL
@@ -43,4 +79,7 @@ const createRequest = async (input: CreateRequestInput) => {
     return result;
 }
 
-export const requestServices = { createRequest };
+const getRequests = (query: string) =>
+  authedRequest<FeedPayload>(`/requests${query ? `?${query}` : ""}`);
+
+export const requestServices = { createRequest, getRequests };

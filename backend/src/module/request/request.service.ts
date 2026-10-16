@@ -12,7 +12,7 @@ import {
 import type { DonationRequest, Prisma } from "../../../generated/prisma/client";
 import { BloodLabel } from "../../types/constant/bloodLabel";
 
-import { eligibilityCutoff } from "../../utils/eligiblity";
+import { eligibilityCutoff, getEligibility } from "../../utils/eligiblity";
 import { COMPATIBLE_Donors } from "../../types/constant/compatibleDonors";
 import { parsePagination } from "../../utils/parsePagination";
 import { validateCoordinates } from "../../utils/validateCordinates";
@@ -49,11 +49,22 @@ type UpdateDonationRequestInput = {
 type GetDonationRequestsFilters = {
   page?: number | string;
   limit?: number | string;
-  status?: RequestStatus;
-  bloodType?: BloodType;
-  urgency?: Urgency;
+  status?: RequestStatus; // only used by "my requests"
+  bloodType?: string | string[]; // "A_POSITIVE,O_POSITIVE" or repeated
+  urgency?: string | string[];
+  divisionId?: string;
+  districtId?: string;
   upazilaId?: string;
   unionId?: string;
+};
+
+type Viewer = { id: string; role: Role | null };
+
+type ViewerState = {
+  isOwner: boolean;
+  matchStatus: MatchStatus | null;
+  canRespond: boolean;
+  blockedReason: string | null;
 };
 
 type Scope = "UNION" | "UPAZILA";
@@ -155,13 +166,115 @@ const validateLocation = async (upazilaId: string, unionId?: string | null) => {
   }
 };
 
-const validateFilters = (filters: GetDonationRequestsFilters) => {
-  if (filters.status !== undefined)
-    assertEnum(RequestStatus, filters.status, "status");
-  if (filters.bloodType !== undefined)
-    assertEnum(BloodType, filters.bloodType, "blood type");
-  if (filters.urgency !== undefined)
-    assertEnum(Urgency, filters.urgency, "urgency");
+const toList = (value: unknown): string[] => {
+  const raw = Array.isArray(value) ? value : value === undefined ? [] : [value];
+
+  return [
+    ...new Set(
+      raw
+        .flatMap((item) => String(item).split(","))
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ];
+};
+
+const firstString = (value: unknown) =>
+  typeof value === "string" && value.trim() ? value.trim() : undefined;
+
+// Shared by the public feed and "my requests"
+const buildWhere = (
+  filters: GetDonationRequestsFilters,
+): Prisma.DonationRequestWhereInput => {
+  const bloodTypes = toList(filters.bloodType);
+  const urgencies = toList(filters.urgency);
+
+  bloodTypes.forEach((value) => assertEnum(BloodType, value, "blood type"));
+  urgencies.forEach((value) => assertEnum(Urgency, value, "urgency"));
+
+  const unionId = firstString(filters.unionId);
+  const upazilaId = firstString(filters.upazilaId);
+  const districtId = firstString(filters.districtId);
+  const divisionId = firstString(filters.divisionId);
+
+  return {
+    ...(bloodTypes.length > 0 && { bloodType: { in: bloodTypes as BloodType[] } }),
+    ...(urgencies.length > 0 && { urgency: { in: urgencies as Urgency[] } }),
+    // Only the most specific location filter applies
+    ...(unionId
+      ? { unionId }
+      : upazilaId
+        ? { upazilaId }
+        : districtId
+          ? { upazila: { districtId } }
+          : divisionId
+            ? { upazila: { district: { divisionId } } }
+            : {}),
+  };
+};
+
+
+const feedSelect = { ...publicRequestSelect, requesterId: true } as const;
+
+type FeedRow = {
+  id: string;
+  requesterId: string;
+  bloodType: BloodType;
+  unitsNeeded: number;
+  unitsAccepted: number;
+};
+
+// What the logged-in donor can do with each request on the page
+const getViewerStates = async (userId: string, rows: FeedRow[]) => {
+  const [me, matches] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { bloodType: true, lastDonationDate: true },
+    }),
+    prisma.donationMatch.findMany({
+      where: { donorId: userId, requestId: { in: rows.map((row) => row.id) } },
+      select: { requestId: true, status: true },
+    }),
+  ]);
+
+  const statusByRequest = new Map(matches.map((m) => [m.requestId, m.status]));
+  const eligibility = getEligibility(me?.lastDonationDate ?? null);
+  const states = new Map<string, ViewerState>();
+
+  for (const row of rows) {
+    const isOwner = row.requesterId === userId;
+    const matchStatus = statusByRequest.get(row.id) ?? null;
+    const alreadyAccepted =
+      matchStatus === MatchStatus.ACCEPTED ||
+      matchStatus === MatchStatus.COMPLETED;
+
+    let blockedReason: string | null = null;
+
+    if (!isOwner && !alreadyAccepted) {
+      if (matchStatus === MatchStatus.CANCELLED) {
+        blockedReason = "You can no longer respond to this request";
+      } else if (row.unitsAccepted >= row.unitsNeeded) {
+        blockedReason = "All bags have been claimed";
+      } else if (!me?.bloodType) {
+        blockedReason = "Add your blood type to your profile to donate";
+      } else if (!COMPATIBLE_Donors[row.bloodType].includes(me.bloodType)) {
+        blockedReason = "Your blood type can't donate to this patient";
+      } else if (!eligibility.eligible) {
+        blockedReason = `You can donate again on ${eligibility.nextEligibleDate
+          ?.toISOString()
+          .slice(0, 10)}`;
+      }
+    }
+
+    states.set(row.id, {
+      isOwner,
+      matchStatus,
+      canRespond: !isOwner && !alreadyAccepted && blockedReason === null,
+      blockedReason,
+    });
+  }
+
+  return states;
 };
 
 // ---------- matching helpers ----------
@@ -406,29 +519,40 @@ const getDonationRequestById = async (requestId: string, userId: string) => {
   };
 };
 
-// Public-safe feed. Never exposes patient details or who asked.
-const getAllDonationRequests = async (filters: GetDonationRequestsFilters) => {
+// Public feed. Patient name and note are only included for logged-in users.
+const getAllDonationRequests = async (
+  filters: GetDonationRequestsFilters,
+  viewer?: Viewer,
+) => {
   const { page, limit } = parsePagination(filters.page, filters.limit);
-  validateFilters(filters);
 
-  const where = {
-    status: filters.status ?? RequestStatus.OPEN,
-    ...(filters.bloodType !== undefined && { bloodType: filters.bloodType }),
-    ...(filters.urgency !== undefined && { urgency: filters.urgency }),
-    ...(filters.upazilaId !== undefined && { upazilaId: filters.upazilaId }),
-    ...(filters.unionId !== undefined && { unionId: filters.unionId }),
+  const where: Prisma.DonationRequestWhereInput = {
+    status: RequestStatus.OPEN,
+    ...buildWhere(filters),
   };
 
-  const [requests, total] = await prisma.$transaction([
+  const [rows, total] = await prisma.$transaction([
     prisma.donationRequest.findMany({
       where,
-      select: publicRequestSelect,
+      select: feedSelect,
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { createdAt: "desc" },
     }),
     prisma.donationRequest.count({ where }),
   ]);
+
+  // Only donor/requester accounts get a "can I respond?" state
+  const states =
+    viewer?.role === Role.USER
+      ? await getViewerStates(viewer.id, rows)
+      : new Map<string, ViewerState>();
+
+  const requests = rows.map(({ requesterId, patientName, note, ...rest }) => ({
+    ...rest,
+    ...(viewer && { patientName, note }),
+    viewer: states.get(rest.id) ?? null,
+  }));
 
   return {
     requests,
@@ -447,13 +571,13 @@ const getMyDonationRequests = async (
   filters: GetDonationRequestsFilters,
 ) => {
   const { page, limit } = parsePagination(filters.page, filters.limit);
-  validateFilters(filters);
+  if (filters.status !== undefined)
+    assertEnum(RequestStatus, filters.status, "status");
 
   const where = {
     requesterId,
     ...(filters.status !== undefined && { status: filters.status }),
-    ...(filters.bloodType !== undefined && { bloodType: filters.bloodType }),
-    ...(filters.urgency !== undefined && { urgency: filters.urgency }),
+    ...buildWhere(filters),
   };
 
   const [requests, total] = await prisma.$transaction([

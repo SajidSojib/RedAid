@@ -208,10 +208,10 @@ export function RequestForm({ ownPhone }: { ownPhone?: string | null }) {
                         aria-checked={active}
                         onClick={() => field.handleChange(option.value)}
                         className={cn(
-                          "rounded-lg border p-3 text-left transition-colors",
+                          "rounded-lg border p-3 text-left transition-all hover:shadow-sm hover:shadow-primary duration-300 ease-in-out hover:-translate-y-0.5 hover:scale-102",
                           active
                             ? "border-primary bg-primary/5 ring-1 ring-primary"
-                            : "hover:bg-muted/50",
+                            : "hover:bg-secondary/30",
                         )}
                       >
                         <span className="block text-sm font-semibold">

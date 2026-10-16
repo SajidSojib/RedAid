@@ -16,10 +16,15 @@ export const uploadImage = async (file: File): Promise<string> => {
 
   const res = await fetch(
     `${env.NEXT_PUBLIC_IMG_UPLOAD_URL}?key=${env.NEXT_PUBLIC_IMGBB_KEY}`,
-    { method: "POST", body },
+    {
+      method: "POST",
+      body,
+    },
   );
 
   const result = await res.json().catch(() => null);
+
+  console.log(result);
 
   if (!res.ok || !result?.success || !result?.data?.url) {
     throw new Error(

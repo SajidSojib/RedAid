@@ -8,7 +8,7 @@ export default async function NewRequestPage() {
   const { data: session } = await userServices.getSessionServer();
   const user = session?.user;
 
-  if (!user) redirect("/login?next=/requests/new");
+  if (!user) redirect("/login?next=/add-request");
 
   // Banks and admins have their own flows. The backend only allows USER accounts anyway.
   if (user.role && user.role !== "USER") {
