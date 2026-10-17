@@ -16,6 +16,7 @@ import { eligibilityCutoff, getEligibility } from "../../utils/eligiblity";
 import { COMPATIBLE_Donors } from "../../types/constant/compatibleDonors";
 import { parsePagination } from "../../utils/parsePagination";
 import { validateCoordinates } from "../../utils/validateCordinates";
+import { donorRequestLink, requesterRequestLink } from "../../utils/links";
 
 type CreateDonationRequestInput = {
   patientName?: string | null;
@@ -56,6 +57,7 @@ type GetDonationRequestsFilters = {
   districtId?: string;
   upazilaId?: string;
   unionId?: string;
+  scope?: string;
 };
 
 type Viewer = { id: string; role: Role | null };
@@ -111,7 +113,90 @@ const publicRequestSelect = {
   note: true,
 } as const;
 
+const ACTIVE_STATUSES: RequestStatus[] = [
+  RequestStatus.OPEN,
+  RequestStatus.FULFILLED,
+];
+const HISTORY_STATUSES: RequestStatus[] = [
+  RequestStatus.COMPLETED,
+  RequestStatus.CANCELLED,
+  RequestStatus.EXPIRED,
+];
+
 // ---------- validation helpers ----------
+
+// OPEN or FULFILLED depends on whether every bag is claimed.
+// Call it after unitsNeeded or unitsAccepted changes.
+const reconcileStatus = async (tx: Tx, requestId: string) => {
+  const r = await tx.donationRequest.findUniqueOrThrow({
+    where: { id: requestId },
+    select: { status: true, unitsAccepted: true, unitsNeeded: true },
+  });
+
+  if (r.status === RequestStatus.OPEN && r.unitsAccepted >= r.unitsNeeded) {
+    await tx.donationRequest.updateMany({
+      where: { id: requestId, status: RequestStatus.OPEN },
+      data: { status: RequestStatus.FULFILLED },
+    });
+  } else if (
+    r.status === RequestStatus.FULFILLED &&
+    r.unitsAccepted < r.unitsNeeded
+  ) {
+    await tx.donationRequest.updateMany({
+      where: { id: requestId, status: RequestStatus.FULFILLED },
+      data: { status: RequestStatus.OPEN },
+    });
+  }
+};
+
+// Used by "mark complete", by the last confirmed donation, and by the expiry job
+export const closeRequestAsCompleted = async (
+  tx: Tx,
+  request: { id: string; bloodType: BloodType },
+) => {
+  const [donated, waiting] = await Promise.all([
+    tx.donationMatch.count({
+      where: { requestId: request.id, status: MatchStatus.COMPLETED },
+    }),
+    tx.donationMatch.findMany({
+      where: { requestId: request.id, status: MatchStatus.ACCEPTED },
+      select: { donorId: true },
+    }),
+  ]);
+
+  // Guarded write: fails if the request was closed or cancelled in the meantime
+  const closed = await tx.donationRequest.updateMany({
+    where: { id: request.id, status: { in: ACTIVE_STATUSES } },
+    data: { status: RequestStatus.COMPLETED, unitsAccepted: donated },
+  });
+
+  if (closed.count === 0) {
+    throw new ApiError(409, "This request can no longer be completed");
+  }
+
+  // Donors who accepted but never donated are released, and pending offers are closed
+  await tx.donationMatch.updateMany({
+    where: {
+      requestId: request.id,
+      status: { in: [MatchStatus.NOTIFIED, MatchStatus.ACCEPTED] },
+    },
+    data: { status: MatchStatus.CANCELLED },
+  });
+
+  if (waiting.length > 0) {
+    await tx.notification.createMany({
+      data: waiting.map((m) => ({
+        userId: m.donorId,
+        type: NotificationType.REQUEST_CLOSED,
+        title: "Request completed",
+        message: `The ${BloodLabel[request.bloodType]} request you accepted has been completed, so you're no longer needed. Thank you for being ready to help.`,
+        link: donorRequestLink(request.id),
+      })),
+    });
+  }
+
+  return donated;
+};
 
 const assertEnum = (
   enumObject: Record<string, string>,
@@ -251,7 +336,10 @@ const getViewerStates = async (userId: string, rows: FeedRow[]) => {
     let blockedReason: string | null = null;
 
     if (!isOwner && !alreadyAccepted) {
-      if (matchStatus === MatchStatus.CANCELLED) {
+      if (
+        matchStatus === MatchStatus.CANCELLED ||
+        matchStatus === MatchStatus.NO_SHOW
+      ) {
         blockedReason = "You can no longer respond to this request";
       } else if (row.unitsAccepted >= row.unitsNeeded) {
         blockedReason = "All bags have been claimed";
@@ -571,16 +659,24 @@ const getMyDonationRequests = async (
   filters: GetDonationRequestsFilters,
 ) => {
   const { page, limit } = parsePagination(filters.page, filters.limit);
-  if (filters.status !== undefined)
-    assertEnum(RequestStatus, filters.status, "status");
 
-  const where = {
+  const scope = firstString(filters.scope);
+  if (scope !== undefined && scope !== "active" && scope !== "history") {
+    throw new ApiError(400, "Scope must be active or history");
+  }
+  if (filters.status !== undefined) {
+    assertEnum(RequestStatus, filters.status, "status");
+  }
+
+  const where: Prisma.DonationRequestWhereInput = {
     requesterId,
-    ...(filters.status !== undefined && { status: filters.status }),
+    ...(scope === "active" && { status: { in: ACTIVE_STATUSES } }),
+    ...(scope === "history" && { status: { in: HISTORY_STATUSES } }),
+    ...(filters.status !== undefined && { status: filters.status }), // an exact status wins over the scope
     ...buildWhere(filters),
   };
 
-  const [requests, total] = await prisma.$transaction([
+  const [rows, total, openCount] = await prisma.$transaction([
     prisma.donationRequest.findMany({
       where,
       skip: (page - 1) * limit,
@@ -589,25 +685,149 @@ const getMyDonationRequests = async (
       include: {
         upazila: areaSelect,
         union: areaSelect,
-        _count: {
-          select: {
-            matches: true,
-            donations: true,
+        _count: { select: { matches: true } }, // how many donors were notified
+        matches: {
+          where: {
+            status: { in: [MatchStatus.ACCEPTED, MatchStatus.COMPLETED] },
           },
+          select: { status: true },
         },
       },
     }),
     prisma.donationRequest.count({ where }),
+    prisma.donationRequest.count({
+      where: { requesterId, status: RequestStatus.OPEN },
+    }),
   ]);
+
+  const requests = rows.map(({ matches, ...request }) => ({
+    ...request,
+    donors: {
+      waiting: matches.filter((m) => m.status === MatchStatus.ACCEPTED).length,
+      donated: matches.filter((m) => m.status === MatchStatus.COMPLETED).length,
+    },
+  }));
 
   return {
     requests,
+    openRequests: { used: openCount, limit: MAX_OPEN_REQUESTS_PER_USER },
     pagination: {
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
     },
+  };
+};
+
+const getMyDonationRequestById = async (
+  requesterId: string,
+  requestId: string,
+) => {
+  const request = await prisma.donationRequest.findFirst({
+    where: { id: requestId, requesterId },
+    include: {
+      upazila: {
+        select: {
+          id: true,
+          name: true,
+          bn_name: true,
+          district: { select: { id: true, name: true, bn_name: true } },
+        },
+      },
+      union: areaSelect,
+    },
+  });
+
+  if (!request) {
+    throw new ApiError(404, "Donation request not found");
+  }
+
+  const [responded, counts] = await Promise.all([
+    // Donors who actually answered. Pending offers and declines stay out of this list.
+    prisma.donationMatch.findMany({
+      where: {
+        requestId,
+        respondedAt: { not: null },
+        status: {
+          in: [
+            MatchStatus.ACCEPTED,
+            MatchStatus.COMPLETED,
+            MatchStatus.NO_SHOW,
+            MatchStatus.CANCELLED,
+          ],
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        respondedAt: true,
+        donation: { select: { donatedAt: true } },
+        donor: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            bloodType: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: { respondedAt: "asc" },
+    }),
+    prisma.donationMatch.groupBy({
+      by: ["status"],
+      where: { requestId },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const donors = responded.map((match) => {
+    // A phone number is only shown while the donor is active or has donated
+    const active =
+      match.status === MatchStatus.ACCEPTED ||
+      match.status === MatchStatus.COMPLETED;
+
+    return {
+      matchId: match.id,
+      status: match.status,
+      respondedAt: match.respondedAt,
+      donatedAt: match.donation?.donatedAt ?? null,
+      donor: {
+        id: match.donor.id,
+        name: match.donor.name,
+        image: match.donor.image,
+        bloodType: match.donor.bloodType,
+        phone: active ? match.donor.phone : null,
+      },
+    };
+  });
+
+  const byStatus = Object.fromEntries(
+    counts.map((c) => [c.status, c._count._all]),
+  ) as Partial<Record<MatchStatus, number>>;
+
+  const stats = {
+    notified: counts.reduce((sum, c) => sum + c._count._all, 0),
+    waiting: byStatus.ACCEPTED ?? 0,
+    donated: byStatus.COMPLETED ?? 0,
+    noShow: byStatus.NO_SHOW ?? 0,
+  };
+
+  const isActive = ACTIVE_STATUSES.includes(request.status);
+
+  return {
+    ...request,
+    donors,
+    stats,
+    // The UI reads these, so the rules live in one place
+    actions: {
+      canEdit: isActive,
+      canManageDonors: isActive, // confirm a donation or mark a no-show
+      canComplete: isActive && stats.donated > 0,
+      canCancel: isActive && stats.donated === 0,
+    },
+    locked: { bloodTypeAndArea: stats.notified > 0 },
   };
 };
 
@@ -624,8 +844,11 @@ const updateMyDonationRequest = async (
     throw new ApiError(404, "Donation request not found");
   }
 
-  if (existingRequest.status !== RequestStatus.OPEN) {
-    throw new ApiError(400, "Only open donation requests can be updated");
+  if (!ACTIVE_STATUSES.includes(existingRequest.status)) {
+    throw new ApiError(
+      400,
+      "Only open or fulfilled donation requests can be updated",
+    );
   }
 
   if (payload.bloodType !== undefined)
@@ -708,32 +931,122 @@ const updateMyDonationRequest = async (
     throw new ApiError(400, "Provide at least one field to update");
   }
 
-  const updated = await prisma.donationRequest.updateMany({
-    where: {
-      id: requestId,
-      requesterId,
-      status: RequestStatus.OPEN,
-      ...(payload.unitsNeeded !== undefined && {
-        unitsAccepted: { lte: payload.unitsNeeded },
-      }),
-    },
-    data: updateData,
-  });
+  return prisma.$transaction(async (tx) => {
+    // The status and accepted-units conditions live in the write itself, so a donor
+    // accepting or the request closing at the same moment can't be overwritten.
+    const updated = await tx.donationRequest.updateMany({
+      where: {
+        id: requestId,
+        requesterId,
+        status: { in: ACTIVE_STATUSES },
+        ...(payload.unitsNeeded !== undefined && {
+          unitsAccepted: { lte: payload.unitsNeeded },
+        }),
+      },
+      data: updateData,
+    });
 
-  if (updated.count === 0) {
-    throw new ApiError(
-      409,
-      "This request changed while you were editing it. Reload and try again.",
-    );
-  }
+    if (updated.count === 0) {
+      throw new ApiError(
+        409,
+        "This request changed while you were editing it. Reload and try again.",
+      );
+    }
 
-  return prisma.donationRequest.findUniqueOrThrow({
-    where: { id: requestId },
-    include: {
-      upazila: areaSelect,
-      union: areaSelect,
-    },
+    // More or fewer bags can open or close the request
+    if (payload.unitsNeeded !== undefined) {
+      await reconcileStatus(tx, requestId);
+    }
+
+    // Donors who already committed need to know if where to go or who to call changed
+    const hospitalChanged =
+      payload.hospitalName !== undefined &&
+      (payload.hospitalName ?? null) !== (existingRequest.hospitalName ?? null);
+    const phoneChanged =
+      updateData.contactPhone !== undefined &&
+      updateData.contactPhone !== existingRequest.contactPhone;
+
+    if (hospitalChanged || phoneChanged) {
+      const accepted = await tx.donationMatch.findMany({
+        where: { requestId, status: MatchStatus.ACCEPTED },
+        select: { donorId: true },
+      });
+
+      if (accepted.length > 0) {
+        const what =
+          hospitalChanged && phoneChanged
+            ? "hospital and contact number"
+            : hospitalChanged
+              ? "hospital"
+              : "contact number";
+
+        await tx.notification.createMany({
+          data: accepted.map((m) => ({
+            userId: m.donorId,
+            type: NotificationType.REQUEST_UPDATED,
+            title: "Request details changed",
+            message: `The ${BloodLabel[existingRequest.bloodType]} request you accepted has a new ${what}. Please check the latest details before you go.`,
+            link: donorRequestLink(requestId),
+          })),
+        });
+      }
+    }
+
+    return tx.donationRequest.findUniqueOrThrow({
+      where: { id: requestId },
+      include: {
+        upazila: areaSelect,
+        union: areaSelect,
+      },
+    });
   });
+};
+
+const completeMyDonationRequest = async (
+  requesterId: string,
+  requestId: string,
+) => {
+  return prisma.$transaction(
+    async (tx) => {
+      const request = await tx.donationRequest.findFirst({
+        where: { id: requestId, requesterId },
+        select: { id: true, status: true, bloodType: true },
+      });
+
+      if (!request) {
+        throw new ApiError(404, "Donation request not found");
+      }
+
+      if (!ACTIVE_STATUSES.includes(request.status)) {
+        throw new ApiError(
+          409,
+          "Only open or fulfilled requests can be marked as completed",
+        );
+      }
+
+      const donated = await tx.donationMatch.count({
+        where: { requestId, status: MatchStatus.COMPLETED },
+      });
+
+      if (donated === 0) {
+        throw new ApiError(
+          409,
+          "Confirm at least one donation before completing this request. If nobody donated, cancel it instead.",
+        );
+      }
+
+      await closeRequestAsCompleted(tx, request);
+
+      return tx.donationRequest.findUniqueOrThrow({
+        where: { id: requestId },
+        include: {
+          upazila: areaSelect,
+          union: areaSelect,
+        },
+      });
+    },
+    { timeout: 20000 },
+  );
 };
 
 const cancelMyDonationRequest = async (
@@ -835,34 +1148,70 @@ const expireOverdueRequests = async () => {
         createdAt: { lt: new Date(now - hours * 3_600_000) },
       })),
     },
-    select: { id: true, requesterId: true, bloodType: true },
+    select: {
+      id: true,
+      requesterId: true,
+      bloodType: true,
+      matches: {
+        where: { status: MatchStatus.COMPLETED },
+        select: { id: true },
+        take: 1,
+      },
+    },
   });
 
-  if (overdue.length === 0) return 0;
+  if (overdue.length === 0) return { expired: 0, completed: 0 };
 
-  const ids = overdue.map((request) => request.id);
+  // At least one confirmed donation: it helped someone, so it ends as completed
+  const helped = overdue.filter((r) => r.matches.length > 0);
+  const unanswered = overdue.filter((r) => r.matches.length === 0);
 
-  await prisma.$transaction([
-    prisma.donationRequest.updateMany({
-      where: { id: { in: ids }, status: RequestStatus.OPEN },
-      data: { status: RequestStatus.EXPIRED },
-    }),
-    prisma.donationMatch.updateMany({
-      where: { requestId: { in: ids }, status: MatchStatus.NOTIFIED },
-      data: { status: MatchStatus.CANCELLED },
-    }),
-    prisma.notification.createMany({
-      data: overdue.map((request) => ({
-        userId: request.requesterId,
-        type: NotificationType.REQUEST_EXPIRED,
-        title: "Your request expired",
-        message: `Your ${BloodLabel[request.bloodType]} request received no response in time. You can create a new request or contact a blood bank.`,
-        link: "/blood-banks",
-      })),
-    }),
-  ]);
+  let completed = 0;
+  for (const request of helped) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        await closeRequestAsCompleted(tx, request);
+        await tx.notification.create({
+          data: {
+            userId: request.requesterId,
+            type: NotificationType.REQUEST_CLOSED,
+            title: "Your request was completed",
+            message: `Your ${BloodLabel[request.bloodType]} request was closed automatically. A donation was confirmed and no one else responded in time.`,
+            link: requesterRequestLink(request.id),
+          },
+        });
+      });
+      completed += 1;
+    } catch (error) {
+      console.error("Failed to auto-complete request", request.id, error);
+    }
+  }
 
-  return ids.length;
+  if (unanswered.length > 0) {
+    const ids = unanswered.map((request) => request.id);
+
+    await prisma.$transaction([
+      prisma.donationRequest.updateMany({
+        where: { id: { in: ids }, status: RequestStatus.OPEN },
+        data: { status: RequestStatus.EXPIRED },
+      }),
+      prisma.donationMatch.updateMany({
+        where: { requestId: { in: ids }, status: MatchStatus.NOTIFIED },
+        data: { status: MatchStatus.CANCELLED },
+      }),
+      prisma.notification.createMany({
+        data: unanswered.map((request) => ({
+          userId: request.requesterId,
+          type: NotificationType.REQUEST_EXPIRED,
+          title: "Your request expired",
+          message: `Your ${BloodLabel[request.bloodType]} request received no response in time. You can request again or contact a blood bank.`,
+          link: requesterRequestLink(request.id),
+        })),
+      }),
+    ]);
+  }
+
+  return { expired: unanswered.length, completed };
 };
 
 export const requestServices = {
@@ -870,7 +1219,9 @@ export const requestServices = {
   getDonationRequestById,
   getAllDonationRequests,
   getMyDonationRequests,
+  getMyDonationRequestById,
   updateMyDonationRequest,
   cancelMyDonationRequest,
+  completeMyDonationRequest,
   expireOverdueRequests,
 };

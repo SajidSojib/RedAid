@@ -55,6 +55,7 @@ enum Urgency {
 enum RequestStatus {
   OPEN
   FULFILLED
+  COMPLETED
   CANCELLED
   EXPIRED
 }
@@ -64,4 +65,6 @@ enum MatchStatus {
   ACCEPTED
   COMPLETED
   CANCELLED
+  DECLINED
+  NO_SHOW
 }

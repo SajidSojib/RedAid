@@ -8,6 +8,7 @@ import {
 import { parsePagination } from "../../utils/parsePagination";
 import { getEligibility } from "../../utils/eligiblity";
 import { achievementServices } from "../achievement/achievement.service";
+import { closeRequestAsCompleted } from "../request/request.service";
 
 type GetMyDonationsFilters = {
   page?: number | string;
@@ -31,7 +32,15 @@ const confirmDonation = async (requesterId: string, matchId: string) => {
       const match = await tx.donationMatch.findFirst({
         where: { id: matchId, request: { requesterId } },
         include: {
-          request: { select: { id: true, status: true, hospitalName: true } },
+          request: {
+            select: {
+              id: true,
+              status: true,
+              hospitalName: true,
+              bloodType: true,
+              unitsNeeded: true,
+            },
+          },
           donation: { select: { id: true } },
         },
       });
@@ -111,10 +120,25 @@ const confirmDonation = async (requesterId: string, matchId: string) => {
         },
       });
 
+      // When every needed bag has been donated, the request is complete
+      const donatedCount = await tx.donationMatch.count({
+        where: { requestId: match.requestId, status: MatchStatus.COMPLETED },
+      });
+
+      let requestCompleted = false;
+      if (donatedCount >= match.request.unitsNeeded) {
+        await closeRequestAsCompleted(tx, {
+          id: match.request.id,
+          bloodType: match.request.bloodType,
+        });
+        requestCompleted = true;
+      }
+
       return {
         donation,
         donationCount: donor.donationCount,
-        earned, // badges and certificates unlocked by this donation (empty if none)
+        earned,
+        requestCompleted,
       };
     },
     { timeout: 20000 },

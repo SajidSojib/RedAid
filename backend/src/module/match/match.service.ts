@@ -10,6 +10,7 @@ import { getEligibility } from "../../utils/eligiblity";
 import { BloodLabel } from "../../types/constant/bloodLabel";
 import { Prisma } from "../../../generated/prisma/client";
 import { COMPATIBLE_Donors } from "../../types/constant/compatibleDonors";
+import { requesterRequestLink } from "../../utils/links";
 
 // ---------- Types ----------
 type Tx = Prisma.TransactionClient;
@@ -189,7 +190,7 @@ const acceptMatch = async (tx: Tx, donorId: string, matchId: string) => {
         type: NotificationType.DONOR_ACCEPTED,
         title: "A donor accepted your request",
         message: `${match.donor.name} accepted your ${BloodLabel[request.bloodType]} blood request.`,
-        link: `/requests/${request.id}`,
+        link: requesterRequestLink(request.id),
       },
     });
 
@@ -200,7 +201,7 @@ const acceptMatch = async (tx: Tx, donorId: string, matchId: string) => {
           type: NotificationType.REQUEST_FILLED,
           title: "All donor slots filled",
           message: `Your ${BloodLabel[request.bloodType]} blood request has received enough donor commitments.`,
-          link: `/requests/${request.id}`,
+          link: requesterRequestLink(request.id),
         },
       });
     }
@@ -229,7 +230,7 @@ const declineOffer = async (donorId: string, matchId: string) => {
       status: MatchStatus.NOTIFIED,
     },
     data: {
-      status: MatchStatus.CANCELLED,
+      status: MatchStatus.DECLINED,
       respondedAt: new Date(),
     },
   });
@@ -319,7 +320,7 @@ const cancelNoShow = async (requesterId: string, matchId: string) => {
         status: MatchStatus.ACCEPTED,
       },
       data: {
-        status: MatchStatus.CANCELLED,
+        status: MatchStatus.NO_SHOW,
         respondedAt: new Date(),
       },
     });
@@ -373,12 +374,24 @@ const volunteerForRequest = async (donorId: string, requestId: string) => {
       if (existing.status === MatchStatus.NOTIFIED) {
         return acceptMatch(tx, donorId, existing.id);
       }
+
+      // The donor said no earlier but changed their mind
+      if (existing.status === MatchStatus.DECLINED) {
+        await tx.donationMatch.update({
+          where: { id: existing.id },
+          data: { status: MatchStatus.NOTIFIED, respondedAt: null },
+        });
+        return acceptMatch(tx, donorId, existing.id); // if this throws, the reset is rolled back too
+      }
+
       if (
         existing.status === MatchStatus.ACCEPTED ||
         existing.status === MatchStatus.COMPLETED
       ) {
         throw new ApiError(409, "You have already accepted this request");
       }
+
+      // CANCELLED or NO_SHOW
       throw new ApiError(409, "You can no longer respond to this request");
     }
 

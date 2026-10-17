@@ -112,6 +112,40 @@ const cancelMyDonationRequest = asyncHandler(
   },
 );
 
+const getMyDonationRequestById = asyncHandler(
+  async (req: Request, res: Response) => {
+    const request = await requestServices.getMyDonationRequestById(
+      req.user!.id,
+      req.params.requestId as string,
+    );
+
+    const response = new ApiResponse(
+      200,
+      request,
+      "Your donation request retrieved successfully",
+    );
+
+    return response.send(res);
+  },
+);
+
+const completeMyDonationRequest = asyncHandler(
+  async (req: Request, res: Response) => {
+    const request = await requestServices.completeMyDonationRequest(
+      req.user!.id,
+      req.params.requestId as string,
+    );
+
+    const response = new ApiResponse(
+      200,
+      request,
+      "Donation request marked as completed",
+    );
+
+    return response.send(res);
+  },
+);
+
 export const requestControllers = {
   createDonationRequest,
   getDonationRequestById,
@@ -119,4 +153,6 @@ export const requestControllers = {
   getMyDonationRequests,
   updateMyDonationRequest,
   cancelMyDonationRequest,
+  getMyDonationRequestById,
+  completeMyDonationRequest,
 };

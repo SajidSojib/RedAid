@@ -13,6 +13,18 @@ router.get("/", optionalAuth, requestControllers.getAllDonationRequests);
 router.get("/my", auth(Role.USER), requestControllers.getMyDonationRequests);
 
 router.get(
+  "/my/:requestId",
+  auth(Role.USER),
+  requestControllers.getMyDonationRequestById,
+);
+
+router.patch(
+  "/:requestId/complete",
+  auth(Role.USER),
+  requestControllers.completeMyDonationRequest,
+);
+
+router.get(
   "/:requestId",
   auth(Role.USER),
   requestControllers.getDonationRequestById,
