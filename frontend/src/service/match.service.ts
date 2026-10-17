@@ -6,4 +6,13 @@ const volunteerForRequest = (requestId: string) =>
     { method: "POST" },
   );
 
-export const matchServices = { volunteerForRequest };
+const cancelNoShow = (matchId: string) =>
+  authedRequest<unknown>(
+    `/matches/${encodeURIComponent(matchId)}/cancel-no-show`,
+    {
+      method: "PATCH",
+    },
+  );
+
+export const matchServices = { volunteerForRequest, cancelNoShow };
+

@@ -8,3 +8,9 @@ export const volunteerForRequest = async (requestId: string) => {
   refresh();
   return result;
 };
+
+export const markNoShow = async (matchId: string) => {
+  const result = await matchServices.cancelNoShow(matchId);
+  refresh();
+  return result;
+};

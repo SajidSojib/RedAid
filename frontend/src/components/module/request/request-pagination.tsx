@@ -13,10 +13,12 @@ export function RequestPagination({
   page,
   totalPages,
   query,
+  basePath = "/all-requests",
 }: {
   page: number;
   totalPages: number;
   query: URLSearchParams; // the active filters, without page
+  basePath?: string; // the base path for the pagination links
 }) {
   if (totalPages <= 1) return null;
 
@@ -24,7 +26,7 @@ export function RequestPagination({
     const params = new URLSearchParams(query);
     if (target > 1) params.set("page", String(target));
     const qs = params.toString();
-    return qs ? `/requests?${qs}` : "/requests";
+    return qs ? `${basePath}?${qs}` : basePath;
   };
 
   const numbers = [...new Set([1, page - 1, page, page + 1, totalPages])]

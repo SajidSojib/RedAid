@@ -51,3 +51,27 @@ export const requestSchema = z.object({
     .trim()
     .max(500, { message: "Note must be at most 500 characters" }),
 });
+
+export const buildEditRequestSchema = (minUnits: number) =>
+  requestSchema
+    .pick({
+      urgency: true,
+      hospitalName: true,
+      patientName: true,
+      contactPhone: true,
+      note: true,
+    })
+    .extend({
+      unitsNeeded: z
+        .number()
+        .int()
+        .min(minUnits, {
+          message:
+            minUnits > 1
+              ? `${minUnits} donors already accepted, so you can't go below ${minUnits}`
+              : "At least 1 bag is needed",
+        })
+        .max(MAX_UNITS_PER_REQUEST, {
+          message: `You can request up to ${MAX_UNITS_PER_REQUEST} bags`,
+        }),
+    });
