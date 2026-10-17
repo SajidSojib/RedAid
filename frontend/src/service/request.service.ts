@@ -57,6 +57,30 @@ export type FeedPayload = {
   };
 };
 
+export type DonorRequestView = {
+  viewer: "DONOR";
+  id: string;
+  bloodType: string;
+  unitsNeeded: number;
+  unitsAccepted: number;
+  urgency: RequestUrgency;
+  status: RequestStatus;
+  hospitalName: string | null;
+  note: string | null;
+  createdAt: string;
+  upazila: LocationRef;
+  union: LocationRef | null;
+  // only present after the donor accepts
+  patientName?: string | null;
+  contactPhone?: string | null;
+  myMatch: {
+    id: string;
+    status: MatchStatus;
+    notifiedAt: string;
+    respondedAt: string | null;
+  };
+};
+
 const API_URL = env.NEXT_PUBLIC_API_URL
 
 
@@ -143,7 +167,12 @@ export type UpdateRequestInput = {
   note?: string | null;
 };
 
+export type RequestByIdPayload = DonorRequestView | { viewer: "REQUESTER" };
+
 const enc = encodeURIComponent;
+
+const getRequestById = (id: string) =>
+  authedRequest<RequestByIdPayload>(`/requests/${enc(id)}`);
 
 const createRequest = async (input: CreateRequestInput) => {
   const cookieStore = await cookies();
@@ -194,4 +223,5 @@ export const requestServices = {
   updateRequest,
   cancelRequest,
   completeRequest,
+  getRequestById
 };

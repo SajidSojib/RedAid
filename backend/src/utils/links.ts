@@ -2,4 +2,4 @@
 export const requesterRequestLink = (id: string) =>
   `/dashboard/my-requests?request=${id}`;
 
-export const donorRequestLink = (id: string) => `/requests/${id}`;
+export const donorRequestLink = (id: string) => `/all-requests/${id}`;

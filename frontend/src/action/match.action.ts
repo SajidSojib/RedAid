@@ -14,3 +14,9 @@ export const markNoShow = async (matchId: string) => {
   refresh();
   return result;
 };
+
+export const declineOffer = async (matchId: string) => {
+  const result = await matchServices.declineOffer(matchId);
+  refresh();
+  return result;
+};

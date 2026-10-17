@@ -434,7 +434,7 @@ const notifyDonors = async (
       } of ${label} needed${
         request.hospitalName ? ` at ${request.hospitalName}` : ""
       }. Open the request to respond.`,
-      link: `/requests/${request.id}`,
+      link: `/all-requests/${request.id}`,
     })),
   });
 
@@ -1120,7 +1120,7 @@ const cancelMyDonationRequest = async (
           type: NotificationType.REQUEST_CANCELLED,
           title: "Request cancelled",
           message: `The ${BloodLabel[existingRequest.bloodType]} request you accepted was cancelled by the requester. Thank you for being ready to help.`,
-          link: `/requests/${requestId}`,
+          link: `/all-requests/${requestId}`,
         })),
       });
     }

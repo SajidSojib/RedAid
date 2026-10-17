@@ -99,7 +99,7 @@ async function RequestResults({
             variant="outline"
             size="sm"
             className="mt-3"
-            render={<Link href="/requests" />}
+            render={<Link href="/all-requests" />}
             nativeButton={false}
           >
             Clear filters and retry
@@ -140,7 +140,7 @@ async function RequestResults({
   const params = new URLSearchParams(filterParams);
   if (page > 1) params.set("page", String(page));
   const qs = params.toString();
-  const returnTo = qs ? `/requests?${qs}` : "/requests";
+  const returnTo = qs ? `/all-requests?${qs}` : "/all-requests";
 
   return (
     <div className="space-y-4">

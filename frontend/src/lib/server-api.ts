@@ -3,7 +3,7 @@ import { env } from "@/env";
 
 export type Result<T> =
   | { data: T; error: null }
-  | { data: null; error: { message: string } };
+  | { data: null; error: { message: string; status?: number } };
 
 export const authedRequest = async <T>(
   path: string,
@@ -31,7 +31,10 @@ export const authedRequest = async <T>(
     if (!res.ok || !result?.success) {
       return {
         data: null,
-        error: { message: result?.message ?? "Request failed" },
+        error: {
+          message: result?.message ?? "Request failed",
+          status: res.status,
+        },
       };
     }
 

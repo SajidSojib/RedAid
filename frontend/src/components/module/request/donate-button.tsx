@@ -41,7 +41,7 @@ export function DonateButton({
       toast.success("Thank you! The requester has been notified.", {
         action: {
           label: "View details",
-          onClick: () => router.push(`/requests/${requestId}`),
+          onClick: () => router.push(`/all-requests/${requestId}`),
         },
       });
     });

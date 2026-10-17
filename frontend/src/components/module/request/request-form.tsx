@@ -116,7 +116,7 @@ export function RequestForm({ ownPhone }: { ownPhone?: string | null }) {
 
         <div className="flex flex-wrap gap-3">
           <Link
-            href={`/requests/${outcome.result.request.id}`}
+            href={`/all-requests/${outcome.result.request.id}`}
             className={buttonVariants()}
           >
             View request

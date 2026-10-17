@@ -34,7 +34,7 @@ function detailsLink(id: string, label: string) {
     <Button
       variant="outline"
       size="sm"
-      render={<Link href={`/requests/${id}`} />}
+      render={<Link href={`/all-requests/${id}`} />}
       nativeButton={false}
     >
       {label}

@@ -14,5 +14,10 @@ const cancelNoShow = (matchId: string) =>
     },
   );
 
-export const matchServices = { volunteerForRequest, cancelNoShow };
+const declineOffer = (matchId: string) =>
+  authedRequest<unknown>(`/matches/${encodeURIComponent(matchId)}/decline`, {
+    method: "PATCH",
+  });
+
+export const matchServices = { volunteerForRequest, cancelNoShow, declineOffer };
 
