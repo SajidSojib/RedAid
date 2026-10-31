@@ -220,45 +220,45 @@ export default async function RequestsPage({
 
   return (
     <RequestsShell>
-        <RequestFilters {...options} />
+      <RequestFilters {...options} />
 
-        <SidebarInset>
-          <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6">
-            <header className="flex flex-wrap items-end justify-between gap-4">
-              <div className="space-y-1.5">
-                <h1 className="text-2xl font-semibold tracking-tight">
-                  Blood requests
-                </h1>
-                <p className="max-w-xl text-sm text-muted-foreground">
-                  People who need blood right now. If you are eligible and your
-                  blood type matches, you can respond.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <FiltersToggle activeCount={activeCount} />
-                <Button
-                  render={<Link href="/requests/new" />}
-                  nativeButton={false}
-                >
-                  Request blood
-                </Button>
-              </div>
-            </header>
+      <SidebarInset>
+        <div className="w-full space-y-6 px-4 py-8 sm:px-6">
+          <header className="flex flex-wrap items-end justify-between gap-4">
+            <div className="space-y-1.5">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                Blood requests
+              </h1>
+              <p className="max-w-xl text-sm text-muted-foreground">
+                People who need blood right now. If you are eligible and your
+                blood type matches, you can respond.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <FiltersToggle activeCount={activeCount} />
+              <Button
+                render={<Link href="/add-request" />}
+                nativeButton={false}
+              >
+                Request blood
+              </Button>
+            </div>
+          </header>
 
-            <ActiveFilters params={filterParams} {...options} />
+          <ActiveFilters params={filterParams} {...options} />
 
-            <Suspense
-              key={`${filterParams.toString()}|${page}`}
-              fallback={<ResultsSkeleton />}
-            >
-              <RequestResults
-                backendQuery={backendParams.toString()}
-                filterParams={filterParams}
-                page={page}
-              />
-            </Suspense>
-          </div>
-        </SidebarInset>
+          <Suspense
+            key={`${filterParams.toString()}|${page}`}
+            fallback={<ResultsSkeleton />}
+          >
+            <RequestResults
+              backendQuery={backendParams.toString()}
+              filterParams={filterParams}
+              page={page}
+            />
+          </Suspense>
+        </div>
+      </SidebarInset>
     </RequestsShell>
   );
 }

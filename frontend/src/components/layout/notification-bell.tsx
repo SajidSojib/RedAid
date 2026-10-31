@@ -14,7 +14,6 @@ export function NotificationBellFallback() {
 
 export async function NotificationBell() {
   const { data } = await notificationServices.getMyNotifications({ limit: 10 });
-  console.log(data)
   return (
     <NotificationMenu
       notifications={data?.notifications ?? []}

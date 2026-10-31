@@ -19,7 +19,6 @@ import { bloodLabel } from "@/lib/blood";
 import { timeAgo } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import type { MyRequestDetails, RequestDonor } from "@/service/request.service";
-import { ConfirmAction } from "../../../common/confirm-action";
 import { DIALOG_BASE } from "./dialog-params";
 import { DialogError, DialogLoading } from "./dialog-states";
 import {
@@ -28,6 +27,7 @@ import {
   UrgencyBadge,
 } from "./status-badges";
 import { useRequestDetails } from "./user-request-details";
+import { ConfirmAction } from "@/components/common/confirm-action";
 
 const initials = (name: string) =>
   name

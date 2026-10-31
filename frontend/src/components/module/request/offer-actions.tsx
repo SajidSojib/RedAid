@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 import { declineOffer } from "@/action/match.action";
 import { DonateButton } from "./donate-button";
-import { ConfirmAction } from "../../common/confirm-action";
+import { ConfirmAction } from "@/components/common/confirm-action";
 
 export function OfferActions({
   requestId,

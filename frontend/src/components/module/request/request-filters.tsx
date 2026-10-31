@@ -145,7 +145,13 @@ export function RequestFilters({
     });
 
   return (
-    <Sidebar className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
+    <Sidebar
+      className="
+    top-(--header-height)
+    h-[calc(100svh-var(--header-height))]!
+    md:!left-[max(0px,calc((100vw-80rem)/2))]
+  "
+    >
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

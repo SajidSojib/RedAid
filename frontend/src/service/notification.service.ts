@@ -1,11 +1,14 @@
 import { cookies } from "next/headers";
 import { env } from "@/env";
+import { authedRequest } from "@/lib/server-api";
 
 export type NotificationType =
   | "NEW_REQUEST"
   | "REQUEST_FILLED"
   | "REQUEST_CANCELLED"
   | "REQUEST_EXPIRED"
+  | "REQUEST_UPDATED"
+  | "REQUEST_CLOSED"
   | "DONOR_ACCEPTED"
   | "DONATION_CONFIRMED"
   | "ELIGIBLE_AGAIN"
@@ -77,19 +80,23 @@ const getMyNotifications = (query: ListQuery = {}) => {
   if (query.isRead !== undefined) params.set("isRead", String(query.isRead));
 
   const qs = params.toString();
-  return request<NotificationsPayload>(`/notifications${qs ? `?${qs}` : ""}`);
+  return authedRequest<NotificationsPayload>(
+    `/notifications${qs ? `?${qs}` : ""}`,
+    { cache: { revalidate: 10, tags: ["notifications"] } },
+  );
 };
 
 const getUnreadCount = () =>
-  request<{ unreadCount: number }>("/notifications/unread-count");
+  authedRequest<{ unreadCount: number }>("/notifications/unread-count");
 
 const markAsRead = (id: string) =>
-  request<AppNotification>(`/notifications/${encodeURIComponent(id)}/read`, {
-    method: "PATCH",
-  });
+  authedRequest<AppNotification>(
+    `/notifications/${encodeURIComponent(id)}/read`,
+    { method: "PATCH" },
+  );
 
 const markAllAsRead = () =>
-  request<{ updatedCount: number }>("/notifications/read-all", {
+  authedRequest<{ updatedCount: number }>("/notifications/read-all", {
     method: "PATCH",
   });
 

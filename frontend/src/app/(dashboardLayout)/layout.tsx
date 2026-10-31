@@ -28,7 +28,7 @@ export default async function DashboardLayout({
   const role = isKnownRole(account.role) ? account.role : ROLE.USER;
 
   return (
-    <SidebarProvider className="min-h-[calc(100svh-var(--header-height))]">
+    <SidebarProvider className="min-h-screen">
       <AppSidebar
         role={role}
         account={{

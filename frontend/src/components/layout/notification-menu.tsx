@@ -9,7 +9,6 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,7 +57,6 @@ export function NotificationMenu({
   notifications: AppNotification[];
   unreadCount: number;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   // Updates the screen instantly, then settles to the server values after refresh()
@@ -97,17 +95,13 @@ export function NotificationMenu({
     if (document.visibilityState !== "visible") return;
 
     try {
-      const { data, error } = await getUnreadNotificationCount();
+      const { data, error } = await getUnreadNotificationCount(countRef.current);
 
       if (error || !data) return;
-
-      if (data.unreadCount !== countRef.current) {
-        router.refresh();
-      }
     } catch {
       // offline or backend down, try again on the next tick
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(refreshIfChanged, POLL_MS);
@@ -139,13 +133,7 @@ export function NotificationMenu({
     startTransition(async () => {
       applyRead({ type: "all" });
       const { error } = await markAllNotificationsRead();
-
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-
-      router.refresh();
+      if (error) toast.error(error.message);
     });
   };
 
@@ -165,7 +153,7 @@ export function NotificationMenu({
           />
         }
       >
-        <Bell className={`size-4 ${count > 0 && "text-primary"}`} />
+        <Bell className={cn("size-4", count > 0 && "text-primary")} />
         {count > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground">
             {count > 9 ? "9+" : count}

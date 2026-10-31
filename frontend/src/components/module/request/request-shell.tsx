@@ -11,7 +11,7 @@ export function RequestsShell({ children }: { children: ReactNode }) {
     <SidebarProvider
       open
       onOpenChange={noop}
-      className="min-h-[calc(100svh-var(--header-height))]"
+      className="mx-auto w-full max-w-7xl min-h-[calc(100svh-var(--header-height))]"
       style={{ "--sidebar-width": "18.5rem" } as CSSProperties}
     >
       {children}

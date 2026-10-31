@@ -1,6 +1,4 @@
-import { env } from "@/env";
 import { authedRequest } from "@/lib/server-api";
-import { cookies } from "next/headers";
 
 export type RequestUrgency = "NORMAL" | "URGENT" | "CRITICAL";
 
@@ -81,7 +79,6 @@ export type DonorRequestView = {
   };
 };
 
-const API_URL = env.NEXT_PUBLIC_API_URL
 
 
 export type RequestStatus =
@@ -174,31 +171,21 @@ const enc = encodeURIComponent;
 const getRequestById = (id: string) =>
   authedRequest<RequestByIdPayload>(`/requests/${enc(id)}`);
 
-const createRequest = async (input: CreateRequestInput) => {
-  const cookieStore = await cookies();
-  const res = await fetch(`${API_URL}/requests`, {
+const createRequest = (input: CreateRequestInput) =>
+  authedRequest<CreateRequestResult>("/requests", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      cookie: cookieStore.toString(),
-    },
-    body: JSON.stringify(input),
+    body: input,
   });
-  if (!res.ok) {
-    const errorData = await res.json();
-    console.log(errorData);
-    throw new Error(errorData?.message || "Request failed");
-  }
-
-  const result = await res.json();
-  return result;
-};
 
 const getRequests = (query: string) =>
-  authedRequest<FeedPayload>(`/requests${query ? `?${query}` : ""}`);
+  authedRequest<FeedPayload>(`/requests${query ? `?${query}` : ""}`, {
+    cache: { revalidate: 15, tags: ["requests"] },
+  });
 
 const getMyRequests = (query: string) =>
-  authedRequest<MyRequestsPayload>(`/requests/my${query ? `?${query}` : ""}`);
+  authedRequest<MyRequestsPayload>(`/requests/my${query ? `?${query}` : ""}`, {
+    cache: { revalidate: 15, tags: ["my-requests"] },
+  });
 
 const getMyRequestDetails = (id: string) =>
   authedRequest<MyRequestDetails>(`/requests/my/${enc(id)}`);

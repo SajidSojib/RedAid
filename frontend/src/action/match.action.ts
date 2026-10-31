@@ -1,22 +1,34 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { updateTag } from "next/cache";
 import { matchServices } from "@/service/match.service";
 
 export const volunteerForRequest = async (requestId: string) => {
   const result = await matchServices.volunteerForRequest(requestId);
-  refresh();
+  if (!result.error) {
+      updateTag("my-requests");
+      updateTag("requests");
+      updateTag("notifications");
+    }
   return result;
 };
 
 export const markNoShow = async (matchId: string) => {
   const result = await matchServices.cancelNoShow(matchId);
-  refresh();
+  if (!result.error) {
+    updateTag("my-requests");
+    updateTag("requests");
+    updateTag("notifications");
+  }
   return result;
 };
 
 export const declineOffer = async (matchId: string) => {
   const result = await matchServices.declineOffer(matchId);
-  refresh();
+  if (!result.error) {
+    updateTag("my-requests");
+    updateTag("requests");
+    updateTag("notifications");
+  }
   return result;
 };

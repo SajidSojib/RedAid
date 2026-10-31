@@ -10,20 +10,25 @@ export const authedRequest = async <T>(
   options: {
     method?: "GET" | "POST" | "PATCH" | "DELETE";
     body?: unknown;
+    // GET only. Leave it out for data that must always be fresh.
+    cache?: { revalidate: number; tags: string[] };
   } = {},
 ): Promise<Result<T>> => {
   try {
     const cookieStore = await cookies();
+    const method = options.method ?? "GET";
     const hasBody = options.body !== undefined;
 
     const res = await fetch(`${env.API_URL}${path}`, {
-      method: options.method ?? "GET",
+      method,
       headers: {
         ...(hasBody ? { "Content-Type": "application/json" } : {}),
         cookie: cookieStore.toString(),
       },
       body: hasBody ? JSON.stringify(options.body) : undefined,
-      cache: "no-store",
+      ...(options.cache && method === "GET"
+        ? { next: options.cache }
+        : { cache: "no-store" }),
     });
 
     const result = await res.json().catch(() => null);
