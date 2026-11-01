@@ -20,6 +20,12 @@ router.patch(
   matchesControllers.declineOffer,
 );
 
+router.patch(
+  "/:matchId/withdraw",
+  auth(Role.USER),
+  matchesControllers.withdrawOffer,
+);
+
 // Requester route: cancel an accepted match if the donor did not show up
 router.patch(
   "/:matchId/cancel-no-show",

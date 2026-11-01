@@ -67,4 +67,5 @@ enum MatchStatus {
   CANCELLED
   DECLINED
   NO_SHOW
+  WITHDRAWN
 }

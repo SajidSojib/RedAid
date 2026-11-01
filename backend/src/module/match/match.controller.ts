@@ -1,24 +1,19 @@
 import type { Request, Response } from "express";
-
-import { matchesServices } from "./match.service";
-
+import { GetMyOffersFilters, matchesServices } from "./match.service";
 import { ApiResponse } from "../../utils/apiResponse";
-
 import asyncHandler from "../../utils/asyncHandler";
-import { MatchStatus } from "../../../generated/prisma/enums";
 
 const getMyOffers = asyncHandler(async (req: Request, res: Response) => {
-  const offers = await matchesServices.getMyOffers(req.user!.id, {
-    status: req.query.status as MatchStatus,
-  });
-
-  const response = new ApiResponse(
-    200,
-    offers,
-    "My donation offers retrieved successfully",
+  const result = await matchesServices.getMyOffers(
+    req.user!.id,
+    req.query as unknown as GetMyOffersFilters,
   );
 
-  return response.send(res);
+  return new ApiResponse(
+    200,
+    result,
+    "My donation offers retrieved successfully",
+  ).send(res);
 });
 
 const acceptOffer = asyncHandler(async (req: Request, res: Response) => {
@@ -84,10 +79,22 @@ const volunteerForRequest = asyncHandler(
   },
 );
 
+const withdrawOffer = asyncHandler(async (req: Request, res: Response) => {
+  const match = await matchesServices.withdrawOffer(
+    req.user!.id,
+    req.params.matchId as string,
+  );
+
+  return new ApiResponse(200, match, "You withdrew from this request").send(
+    res,
+  );
+});
+
 export const matchesControllers = {
   getMyOffers,
   acceptOffer,
   declineOffer,
   cancelNoShow,
   volunteerForRequest,
+  withdrawOffer,
 };

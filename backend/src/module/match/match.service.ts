@@ -11,11 +11,30 @@ import { BloodLabel } from "../../types/constant/bloodLabel";
 import { Prisma } from "../../../generated/prisma/client";
 import { COMPATIBLE_Donors } from "../../types/constant/compatibleDonors";
 import { requesterRequestLink } from "../../utils/links";
+import { parsePagination } from "../../utils/parsePagination";
 
 // ---------- Types ----------
 type Tx = Prisma.TransactionClient;
-type GetMyOffersFilters = {
+
+type OfferScope = "pending" | "accepted" | "past";
+
+const SCOPE_STATUSES: Record<OfferScope, MatchStatus[]> = {
+  pending: [MatchStatus.NOTIFIED],
+  accepted: [MatchStatus.ACCEPTED],
+  past: [
+    MatchStatus.COMPLETED,
+    MatchStatus.DECLINED,
+    MatchStatus.NO_SHOW,
+    MatchStatus.CANCELLED,
+    MatchStatus.WITHDRAWN,
+  ],
+};
+
+export type GetMyOffersFilters = {
+  scope?: OfferScope;
   status?: MatchStatus;
+  page?: number | string;
+  limit?: number | string;
 };
 
 const requestSummarySelect = {
@@ -36,6 +55,11 @@ const requestSummarySelect = {
   },
 } as const;
 
+const offerRequestSelect = {
+  ...requestSummarySelect,
+  contactPhone: true,
+} as const;
+
 // ---------- Helpers ----------
 
 const assertMatchStatus = (status: unknown): void => {
@@ -50,28 +74,64 @@ const getMyOffers = async (
   donorId: string,
   filters: GetMyOffersFilters = {},
 ) => {
-  if (filters.status !== undefined) {
-    assertMatchStatus(filters.status);
-  }
+  const { page, limit } = parsePagination(filters.page, filters.limit);
 
-  return prisma.donationMatch.findMany({
-    where: {
-      donorId,
-      ...(filters.status !== undefined && { status: filters.status }),
-    },
-    include: {
-      request: {
-        select: requestSummarySelect,
-      },
-    },
-    orderBy: { notifiedAt: "desc" },
+  if (
+    filters.scope !== undefined &&
+    !Object.hasOwn(SCOPE_STATUSES, filters.scope)
+  ) {
+    throw new ApiError(400, "Scope must be pending, accepted or past");
+  }
+  if (filters.status !== undefined) assertMatchStatus(filters.status);
+
+  const where: Prisma.DonationMatchWhereInput = {
+    donorId,
+    ...(filters.scope && { status: { in: SCOPE_STATUSES[filters.scope] } }),
+    ...(filters.status !== undefined && { status: filters.status }),
+  };
+
+  const [rows, total, pending, accepted, user] = await prisma.$transaction([
+    prisma.donationMatch.findMany({
+      where,
+      include: { request: { select: offerRequestSelect } },
+      orderBy: { notifiedAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.donationMatch.count({ where }),
+    prisma.donationMatch.count({
+      where: { donorId, status: MatchStatus.NOTIFIED },
+    }),
+    prisma.donationMatch.count({
+      where: { donorId, status: MatchStatus.ACCEPTED },
+    }),
+    prisma.user.findUnique({
+      where: { id: donorId },
+      select: { lastDonationDate: true },
+    }),
+  ]);
+
+  // The contact phone is only shown once the donor has accepted
+  const offers = rows.map(({ request, ...match }) => {
+    const unlocked =
+      match.status === MatchStatus.ACCEPTED ||
+      match.status === MatchStatus.COMPLETED;
+    const { contactPhone, ...summary } = request;
+
+    return { ...match, request: unlocked ? request : summary };
   });
+
+  return {
+    offers,
+    counts: { pending, accepted }, // for the tab badges
+    eligibility: getEligibility(user?.lastDonationDate ?? null), // for the banner
+    pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+  };
 };
 
 // ---------- 2. Accept an offer ----------
 
 const acceptMatch = async (tx: Tx, donorId: string, matchId: string) => {
-  return prisma.$transaction(async (tx) => {
     const match = await tx.donationMatch.findFirst({
       where: { id: matchId, donorId },
       include: {
@@ -214,7 +274,6 @@ const acceptMatch = async (tx: Tx, donorId: string, matchId: string) => {
         },
       },
     });
-  });
 };
 
 const acceptOffer = (donorId: string, matchId: string) =>
@@ -418,10 +477,81 @@ const volunteerForRequest = async (donorId: string, requestId: string) => {
   });
 };
 
+// ---------- Donor withdraws after accepting ----------
+
+const withdrawOffer = async (donorId: string, matchId: string) => {
+  return prisma.$transaction(async (tx) => {
+    const match = await tx.donationMatch.findFirst({
+      where: { id: matchId, donorId },
+      include: {
+        request: true,
+        donor: { select: { name: true } },
+        donation: { select: { id: true } },
+      },
+    });
+
+    if (!match) {
+      throw new ApiError(404, "Donation offer not found");
+    }
+
+    if (match.status !== MatchStatus.ACCEPTED || match.donation) {
+      throw new ApiError(
+        409,
+        "Only an accepted offer that hasn't been donated yet can be withdrawn",
+      );
+    }
+
+    // Free the slot. Works for OPEN and FULFILLED requests.
+    const released = await tx.donationRequest.updateMany({
+      where: {
+        id: match.request.id,
+        status: { in: [RequestStatus.OPEN, RequestStatus.FULFILLED] },
+        unitsAccepted: { gt: 0 },
+      },
+      data: { unitsAccepted: { decrement: 1 } },
+    });
+
+    if (released.count === 0) {
+      throw new ApiError(409, "This request is no longer active");
+    }
+
+    // A slot is free again, so a fulfilled request goes back to open
+    await tx.donationRequest.updateMany({
+      where: { id: match.request.id, status: RequestStatus.FULFILLED },
+      data: { status: RequestStatus.OPEN },
+    });
+
+    const withdrawn = await tx.donationMatch.updateMany({
+      where: { id: match.id, status: MatchStatus.ACCEPTED },
+      data: { status: MatchStatus.WITHDRAWN, respondedAt: new Date() },
+    });
+
+    if (withdrawn.count === 0) {
+      throw new ApiError(409, "This offer has already changed. Please reload.");
+    }
+
+    await tx.notification.create({
+      data: {
+        userId: match.request.requesterId,
+        type: NotificationType.REQUEST_UPDATED,
+        title: "A donor withdrew",
+        message: `${match.donor.name} can no longer donate for your ${BloodLabel[match.request.bloodType]} request. The slot is open again.`,
+        link: requesterRequestLink(match.request.id),
+      },
+    });
+
+    return tx.donationMatch.findUniqueOrThrow({
+      where: { id: match.id },
+      include: { request: { select: requestSummarySelect } },
+    });
+  });
+};
+
 export const matchesServices = {
   getMyOffers,
   acceptOffer,
   declineOffer,
   cancelNoShow,
+  withdrawOffer,
   volunteerForRequest,
 };
