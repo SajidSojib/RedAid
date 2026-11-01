@@ -33,6 +33,7 @@ const MATCH_STATUS: Record<
   NO_SHOW: { label: "Didn't show up", variant: "destructive" },
   CANCELLED: { label: "Cancelled", variant: "outline", className: MUTED },
   DECLINED: { label: "Declined", variant: "outline", className: MUTED },
+  WITHDRAWN: { label: "Withdrawn", variant: "outline", className: MUTED },
 };
 
 const URGENCY: Record<

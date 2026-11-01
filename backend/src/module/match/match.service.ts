@@ -450,7 +450,21 @@ const volunteerForRequest = async (donorId: string, requestId: string) => {
         throw new ApiError(409, "You have already accepted this request");
       }
 
-      // CANCELLED or NO_SHOW
+      if (existing.status === MatchStatus.WITHDRAWN) {
+        throw new ApiError(
+          409,
+          "You withdrew from this request earlier, so you can't accept it again.",
+        );
+      }
+
+      if (existing.status === MatchStatus.NO_SHOW) {
+        throw new ApiError(
+          409,
+          "The requester marked you as not showing up, so you can't accept this request again.",
+        );
+      }
+
+      // CANCELLED
       throw new ApiError(409, "You can no longer respond to this request");
     }
 

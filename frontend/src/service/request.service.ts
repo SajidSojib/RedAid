@@ -2,6 +2,22 @@ import { authedRequest } from "@/lib/server-api";
 
 export type RequestUrgency = "NORMAL" | "URGENT" | "CRITICAL";
 
+export type RequestStatus =
+  | "OPEN"
+  | "FULFILLED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "EXPIRED";
+
+export type MatchStatus =
+  | "NOTIFIED"
+  | "ACCEPTED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "DECLINED"
+  | "WITHDRAWN"
+  | "NO_SHOW";
+  
 export type CreateRequestInput = {
   bloodType: string;
   unitsNeeded: number;
@@ -24,7 +40,7 @@ type LocationRef = { id: string; name: string; bn_name: string };
 
 export type RequestViewer = {
   isOwner: boolean;
-  matchStatus: "NOTIFIED" | "ACCEPTED" | "COMPLETED" | "CANCELLED" | "DECLINED" | "NO_SHOW" | null;
+  matchStatus: "NOTIFIED" | "ACCEPTED" | "COMPLETED" | "CANCELLED" | "DECLINED" | "WITHDRAWN" | "NO_SHOW" | null;
   canRespond: boolean;
   blockedReason: string | null;
 };
@@ -78,22 +94,6 @@ export type DonorRequestView = {
     respondedAt: string | null;
   };
 };
-
-export type RequestStatus =
-  | "OPEN"
-  | "FULFILLED"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "EXPIRED";
-
-export type MatchStatus =
-  | "NOTIFIED"
-  | "ACCEPTED"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "DECLINED"
-  | "WITHDRAWN"
-  | "NO_SHOW";
 
 export type MyRequest = {
   id: string;

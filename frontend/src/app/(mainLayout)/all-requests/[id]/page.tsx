@@ -81,6 +81,13 @@ function describeOffer(request: DonorRequestView): Panel {
         title: "You're no longer needed",
         text: "This request was closed before you donated.",
       };
+    case "WITHDRAWN":
+      return {
+        ...base,
+        tone: "muted",
+        title: "You withdrew from this request",
+        text: "You can't accept this request again. Other requests may still need you.",
+      };
     case "DECLINED":
       return open
         ? {

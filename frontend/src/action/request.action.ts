@@ -1,19 +1,21 @@
 "use server";
 
-import { refresh, updateTag } from "next/cache";
+import { updateTag } from "next/cache";
 import {
   requestServices,
   type CreateRequestInput,
   type UpdateRequestInput,
 } from "@/service/request.service";
 
+const expire = () => {
+  updateTag("my-requests");
+  updateTag("requests");
+  updateTag("notifications");
+};
+
 export const createRequest = async (input: CreateRequestInput) => {
   const result = await requestServices.createRequest(input);
-  if (!result.error) {
-    updateTag("my-requests");
-    updateTag("requests");
-    updateTag("notifications");
-  }
+  if (!result.error) expire();
   return result;
 };
 
@@ -27,30 +29,18 @@ export const updateMyRequest = async (
   input: UpdateRequestInput,
 ) => {
   const result = await requestServices.updateRequest(id, input);
-  if (!result.error) {
-    updateTag("my-requests");
-    updateTag("requests");
-    updateTag("notifications");
-  }
+  if (!result.error) expire();
   return result;
 };
 
 export const cancelMyRequest = async (id: string) => {
   const result = await requestServices.cancelRequest(id);
-  if (!result.error) {
-    updateTag("my-requests");
-    updateTag("requests");
-    updateTag("notifications");
-  }
+  if (!result.error) expire();
   return result;
 };
 
 export const completeMyRequest = async (id: string) => {
   const result = await requestServices.completeRequest(id);
-  if (!result.error) {
-    updateTag("my-requests");
-    updateTag("requests");
-    updateTag("notifications");
-  }
+  if (!result.error) expire();
   return result;
 };

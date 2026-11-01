@@ -129,7 +129,7 @@ export default function OfferCard({
           <Button
             variant="ghost"
             size="sm"
-            render={<Link href={`/requests/${request.id}`} />}
+            render={<Link href={`/all-requests/${request.id}`} />}
             nativeButton={false}
           >
             Details
