@@ -79,8 +79,6 @@ export type DonorRequestView = {
   };
 };
 
-
-
 export type RequestStatus =
   | "OPEN"
   | "FULFILLED"
@@ -94,6 +92,7 @@ export type MatchStatus =
   | "COMPLETED"
   | "CANCELLED"
   | "DECLINED"
+  | "WITHDRAWN"
   | "NO_SHOW";
 
 export type MyRequest = {

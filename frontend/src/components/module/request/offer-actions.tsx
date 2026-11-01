@@ -10,15 +10,19 @@ export function OfferActions({
   matchId,
   hospitalName,
   canDecline,
+  canAccept = true,
 }: {
   requestId: string;
   matchId: string;
   hospitalName: string | null;
   canDecline: boolean;
+  canAccept?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <DonateButton requestId={requestId} hospitalName={hospitalName} />
+      {canAccept && (
+        <DonateButton requestId={requestId} hospitalName={hospitalName} />
+      )}
 
       {canDecline && (
         <ConfirmAction
