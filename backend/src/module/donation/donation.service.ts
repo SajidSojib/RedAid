@@ -163,7 +163,7 @@ const getMyDonations = async (
         request: { select: donationRequestSelect },
       },
       orderBy: { donatedAt: "desc" },
-      skip: (page - 1) * limit,
+      skip: (page - 1) * limit, 
       take: limit,
     }),
     prisma.donationHistory.count({ where: { donorId } }),
