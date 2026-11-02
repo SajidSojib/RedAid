@@ -48,7 +48,7 @@ export async function Footer() {
   ];
 
   return (
-    <footer className="relative isolate mt-24 pb-15 border-t bg-muted/30">
+    <footer className="relative isolate mt-30 sm:mt-35 pb-15 border-t bg-muted/30">
       {/* decorations live in their own clipped layer, so the CTA can overlap the top edge */}
       <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-size-[3rem_3rem] mask-[radial-gradient(ellipse_at_bottom,black,transparent_70%)]" />

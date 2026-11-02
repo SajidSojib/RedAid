@@ -10,7 +10,7 @@ import {
 import { matchServices, type Offer } from "@/service/match.service";
 import OfferScopeTabs from "@/components/module/user/my-offers/offer-scope-tabs";
 import OfferCard from "@/components/module/user/my-offers/offer-card";
-import { RequestPagination } from "@/components/module/request/request-pagination";
+import { ListPagination } from "@/components/common/pagination";
 
 export const metadata = { title: "My offers · RedAid" };
 
@@ -130,11 +130,13 @@ export default async function MyOffersPage({
             ))}
           </ul>
 
-          <RequestPagination
+          <ListPagination
             page={pagination.page}
             totalPages={pagination.totalPages}
-            query={new URLSearchParams(scope === "pending" ? {} : { scope })}
+            total={pagination.total}
+            limit={pagination.limit}
             basePath="/dashboard/my-offers"
+            query={new URLSearchParams(scope === "pending" ? {} : { scope })}
           />
         </div>
       )}

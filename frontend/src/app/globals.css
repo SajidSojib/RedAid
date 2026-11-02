@@ -62,7 +62,7 @@
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.95 0.019 17);         /* #FBEAEA primary-subtle */
   --secondary-foreground: oklch(0.416 0.144 26.6);
-  --muted: oklch(0.975 0.003 90);            /* #F8F7F6 surface */
+  --muted: oklch(0.955 0.008 40);           /* #F8F7F6 surface */
   --muted-foreground: oklch(0.506 0.011 40); /* #6B6360 text-secondary */
   --accent: oklch(0.975 0.003 90);
   --accent-foreground: oklch(0.226 0.007 30);

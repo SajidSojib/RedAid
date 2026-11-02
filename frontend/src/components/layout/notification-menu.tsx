@@ -139,82 +139,100 @@ export function NotificationMenu({
 
   const { notifications: items, unreadCount: count } = view;
 
-  return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger
-        render={
-          <Button
-            variant={count > 0 ? "secondary" : "outline"}
-            size="icon"
-            className="relative cursor-pointer"
-            aria-label={
-              count > 0 ? `Notifications, ${count} unread` : "Notifications"
-            }
-          />
-        }
-      >
-        <Bell className={cn("size-4", count > 0 && "text-primary")} />
-        {count > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground">
-            {count > 9 ? "9+" : count}
-          </span>
-        )}
-      </PopoverTrigger>
+    return (
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="outline"
+              size="icon-lg"
+              className="relative cursor-pointer"
+              aria-label={
+                count > 0 ? `Notifications, ${count} unread` : "Notifications"
+              }
+            />
+          }
+        >
+          <Bell className="size-4" />
+          {count > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground ring-2 ring-background">
+              {count > 9 ? "9+" : count}
+            </span>
+          )}
+        </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-88 gap-0 p-0">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Notifications</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={markAll}
-            disabled={count === 0}
-          >
-            <CheckCheck className="size-4" />
-            Mark all as read
-          </Button>
-        </div>
+        <PopoverContent
+          align="end"
+          className="w-96 max-w-[calc(100vw-2rem)] gap-0 overflow-hidden p-0"
+        >
+          <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-sm font-semibold">Notifications</h2>
+              {count > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {count} unread
+                </span>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="-mr-2 h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={markAll}
+              disabled={count === 0}
+            >
+              <CheckCheck className="size-3.5" />
+              Mark all as read
+            </Button>
+          </div>
 
-        {items.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            You are all caught up.
-          </p>
-        ) : (
-          <ul className="max-h-96 divide-y overflow-y-auto">
-            {items.map((n) => (
-              <li key={n.id}>
-                <Link
-                  href={n.link ?? "#"}
-                  onClick={() => openNotification(n)}
-                  className={cn(
-                    "flex gap-3 px-4 py-3 transition-colors hover:bg-muted",
-                    !n.isRead && "bg-primary/5",
-                  )}
-                >
-                  <span
-                    aria-hidden
+          {items.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
+              <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <Bell className="size-4" />
+              </div>
+              <p className="text-sm font-semibold">No notifications yet</p>
+              <p className="text-xs text-muted-foreground">
+                Updates about your requests and offers will show up here.
+              </p>
+            </div>
+          ) : (
+            <ul className="max-h-96 divide-y overflow-y-auto">
+              {items.map((n) => (
+                <li key={n.id}>
+                  <Link
+                    href={n.link ?? "#"}
+                    onClick={() => openNotification(n)}
                     className={cn(
-                      "mt-1.5 size-2 shrink-0 rounded-full",
-                      n.isRead ? "bg-transparent" : "bg-primary",
+                      "relative flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-muted/60",
+                      !n.isRead &&
+                        "bg-primary/5 before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-primary",
                     )}
-                  />
-                  <span className="min-w-0 space-y-1">
-                    <span className="block text-sm font-medium leading-snug">
-                      {n.title}
+                  >
+                    <span className="flex items-start justify-between gap-3">
+                      <span
+                        className={cn(
+                          "text-sm leading-snug",
+                          n.isRead
+                            ? "font-medium text-foreground/80"
+                            : "font-semibold",
+                        )}
+                      >
+                        {n.title}
+                      </span>
+                      <span className="shrink-0 pt-0.5 text-xs text-muted-foreground tabular-nums">
+                        {timeAgo(n.createdAt)}
+                      </span>
                     </span>
-                    <span className="line-clamp-2 block text-sm text-muted-foreground">
+                    <span className="line-clamp-2 text-sm text-muted-foreground">
                       {n.message}
                     </span>
-                    <span className="block text-xs text-muted-foreground">
-                      {timeAgo(n.createdAt)}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </PopoverContent>
+      </Popover>
+    );
 }

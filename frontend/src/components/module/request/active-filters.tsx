@@ -88,13 +88,14 @@ export function ActiveFilters({
           key={chip.id}
           href={chip.href}
           aria-label={`Remove filter ${chip.label}`}
+          className="group"
         >
           <Badge
-            variant="secondary"
-            className="gap-1 pr-1.5 hover:bg-secondary/70"
+            variant="outline"
+            className="gap-1.5 border-primary/30 bg-primary/5 py-1 pr-1.5 pl-2.5 text-primary transition-colors group-hover:border-destructive/40 group-hover:bg-destructive/10 group-hover:text-destructive"
           >
             {chip.label}
-            <X className="size-3" />
+            <X className="size-3 transition-transform group-hover:rotate-90" />
           </Badge>
         </Link>
       ))}

@@ -23,11 +23,12 @@ import {
 import { requestServices } from "@/service/request.service";
 import { userServices } from "@/service/user.service";
 import { RequestCard } from "@/components/module/request/request-card";
-import { RequestPagination } from "@/components/module/request/request-pagination";
 import { RequestsShell } from "@/components/module/request/request-shell";
 import { RequestFilters } from "@/components/module/request/request-filters";
 import { FiltersToggle } from "@/components/module/request/filters-toggle";
 import { ActiveFilters } from "@/components/module/request/active-filters";
+import { ListPagination } from "@/components/common/pagination";
+import { Badge } from "@/components/ui/badge";
 
 export const metadata = { title: "Blood requests · RedAid" };
 
@@ -145,26 +146,32 @@ async function RequestResults({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        {pagination.total} open request{pagination.total === 1 ? "" : "s"}
+        <span className="font-semibold text-foreground tabular-nums">
+          {pagination.total}
+        </span>{" "}
+        open request{pagination.total === 1 ? "" : "s"}
       </p>
 
-      <ul className="space-y-4">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {requests.map((request) => (
-          <li key={request.id}>
+          <div key={request.id}>
             <RequestCard
               request={request}
               loggedIn={Boolean(user)}
               role={user?.role ?? null}
               returnTo={returnTo}
             />
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
-      <RequestPagination
+      <ListPagination
         page={pagination.page}
         totalPages={pagination.totalPages}
+        total={pagination.total}
+        limit={pagination.limit}
         query={filterParams}
+        basePath="/all-requests"
       />
     </div>
   );
@@ -223,11 +230,26 @@ export default async function RequestsPage({
       <RequestFilters {...options} />
 
       <SidebarInset>
-        <div className="w-full space-y-6 px-4 py-8 sm:px-6">
+        <div className="relative w-full space-y-6 px-4 py-8 sm:px-6">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-10 left-1/3 -z-10 size-72 rounded-full bg-primary/10 blur-3xl"
+          />
+
           <header className="flex flex-wrap items-end justify-between gap-4">
-            <div className="space-y-1.5">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                Blood requests
+            <div className="space-y-2">
+              <Badge variant="outline" className="gap-2 py-1 pr-3 pl-2">
+                <span className="relative flex size-2">
+                  <span className="absolute inline-flex size-full rounded-full bg-primary opacity-75 motion-safe:animate-ping" />
+                  <span className="relative inline-flex size-2 rounded-full bg-primary" />
+                </span>
+                Live requests
+              </Badge>
+              <h1 className="text-3xl font-bold tracking-tight">
+                Blood{" "}
+                <span className="bg-linear-to-r from-primary via-destructive to-primary bg-size-[200%_auto] bg-clip-text text-transparent motion-safe:animate-gradient">
+                  requests
+                </span>
               </h1>
               <p className="max-w-xl text-sm text-muted-foreground">
                 People who need blood right now. If you are eligible and your

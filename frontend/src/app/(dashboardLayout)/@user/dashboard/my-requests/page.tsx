@@ -14,8 +14,8 @@ import {
 import { requestServices } from "@/service/request.service";
 import { RequestScopeTabs } from "@/components/module/user/my-requests/request-scope-tabs";
 import { MyRequestsList } from "@/components/module/user/my-requests/my-request-list";
-import { RequestPagination } from "@/components/module/request/request-pagination";
 import { RequestDialogs } from "@/components/module/user/my-requests/request-dialog";
+import { ListPagination } from "@/components/common/pagination";
 
 export const metadata = { title: "My requests · RedAid" };
 
@@ -47,7 +47,6 @@ export default async function MyRequestsPage({
   const paginationQuery = new URLSearchParams(
     scope === "history" ? { scope: "history" } : {},
   );
-
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -116,9 +115,11 @@ export default async function MyRequestsPage({
       ) : (
         <div className="space-y-4">
           <MyRequestsList requests={data.requests} />
-          <RequestPagination
+          <ListPagination
             page={data.pagination.page}
             totalPages={data.pagination.totalPages}
+            total={data.pagination.total}
+            limit={data.pagination.limit}
             query={paginationQuery}
             basePath={BASE_PATH}
           />

@@ -28,7 +28,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RequestPagination } from "@/components/module/request/request-pagination";
 import { bloodLabel } from "@/lib/blood";
 import { cn } from "@/lib/utils";
 import { donationServices } from "@/service/donation.service";
@@ -37,14 +36,15 @@ import { MILESTONES } from "@/constants/milestones";
 import { userServices } from "@/service/user.service";
 import CertificateDialog from "@/components/module/user/my-donations/certificate-dialog";
 import { env } from "@/env";
+import { ListPagination } from "@/components/common/pagination";
 
 export const metadata = { title: "My donations · RedAid" };
 
 // One color per badge, with dark mode handled
 const BADGE_UI: Record<string, { chip: string; glow: string }> = {
   BRONZE: {
-    chip: "bg-orange-500/10 text-orange-600 ring-orange-500/30 dark:text-orange-400",
-    glow: "hover:shadow-orange-500/20",
+    chip: "bg-orange-700/10 text-orange-700 ring-orange-700/30 dark:text-orange-700",
+    glow: "hover:shadow-orange-600/20",
   },
   SILVER: {
     chip: "bg-slate-500/10 text-slate-600 ring-slate-500/30 dark:text-slate-300",
@@ -382,10 +382,11 @@ export default async function MyDonationsPage({
               </Table>
             </Card>
 
-            <RequestPagination
+            <ListPagination
               page={pagination.page}
               totalPages={pagination.totalPages}
-              query={new URLSearchParams()}
+              total={pagination.total}
+              limit={pagination.limit}
               basePath="/dashboard/my-donations"
             />
           </>

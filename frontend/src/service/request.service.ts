@@ -17,7 +17,7 @@ export type MatchStatus =
   | "DECLINED"
   | "WITHDRAWN"
   | "NO_SHOW";
-  
+
 export type CreateRequestInput = {
   bloodType: string;
   unitsNeeded: number;
@@ -54,7 +54,7 @@ export type FeedRequest = {
   status: string;
   hospitalName: string | null;
   createdAt: string;
-  upazila: LocationRef;
+  upazila: LocationRef & { district: LocationRef };
   union: LocationRef | null;
   patientName?: string | null; // only present for logged-in users
   note?: string | null;
@@ -82,7 +82,7 @@ export type DonorRequestView = {
   hospitalName: string | null;
   note: string | null;
   createdAt: string;
-  upazila: LocationRef;
+  upazila: LocationRef & { district: LocationRef };
   union: LocationRef | null;
   // only present after the donor accepts
   patientName?: string | null;

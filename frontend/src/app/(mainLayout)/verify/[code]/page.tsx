@@ -94,7 +94,7 @@ function Shell({
                 <span
                   aria-hidden
                   className={cn(
-                    "absolute inset-0 rounded-full motion-safe:animate-ping [animation-duration:2.5s]",
+                    "absolute inset-0 rounded-full motion-safe:animate-ping animation-duration-[2.5s]",
                     t.ping,
                   )}
                 />

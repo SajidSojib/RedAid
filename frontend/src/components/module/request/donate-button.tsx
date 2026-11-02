@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader } from "lucide-react";
+import { HeartHandshake, Loader } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -49,16 +49,23 @@ export function DonateButton({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button />}>I can donate</AlertDialogTrigger>
+      <AlertDialogTrigger
+        render={<Button className="shadow-md shadow-primary/20" />}
+      >
+        <HeartHandshake className="size-4" />I can donate
+      </AlertDialogTrigger>
 
       <AlertDialogContent>
         <AlertDialogHeader>
+          <div className="mx-auto mb-1 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary sm:mx-0">
+            <HeartHandshake className="size-6" />
+          </div>
           <AlertDialogTitle>Donate one bag of blood?</AlertDialogTitle>
           <AlertDialogDescription>
             You are committing to donate one bag
             {hospitalName ? ` at ${hospitalName}` : ""}. The requester is
-            notified and their contact details unlock for you. If you can not make
-            it, please let them know.
+            notified and their contact details unlock for you. If you can not
+            make it, please let them know.
           </AlertDialogDescription>
         </AlertDialogHeader>
 

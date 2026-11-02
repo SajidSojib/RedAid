@@ -96,6 +96,14 @@ export const REQUEST_EXPIRY_HOURS: Record<Urgency, number> = {
 // const PHONE_REGEX = /^(?:\+?88)?01[3-9]\d{8}$/;
 
 const areaSelect = { select: { id: true, name: true, bn_name: true } } as const;
+const upazilaSelect = {
+  select: {
+    id: true,
+    name: true,
+    bn_name: true,
+    district: { select: { id: true, name: true, bn_name: true } },
+  },
+} as const;
 
 // What anyone browsing requests may see. No patient phone, coordinates or requester.
 const publicRequestSelect = {
@@ -108,7 +116,7 @@ const publicRequestSelect = {
   status: true,
   hospitalName: true,
   createdAt: true,
-  upazila: areaSelect,
+  upazila: upazilaSelect,
   union: areaSelect,
   note: true,
 } as const;
@@ -524,7 +532,7 @@ const getDonationRequestById = async (requestId: string, userId: string) => {
   const request = await prisma.donationRequest.findUnique({
     where: { id: requestId },
     include: {
-      upazila: areaSelect,
+      upazila: upazilaSelect,
       union: areaSelect,
     },
   });
@@ -596,6 +604,7 @@ const getDonationRequestById = async (requestId: string, userId: string) => {
     status: request.status,
     hospitalName: request.hospitalName,
     note: request.note,
+    district: request.upazila.district,
     upazila: request.upazila,
     union: request.union,
     createdAt: request.createdAt,

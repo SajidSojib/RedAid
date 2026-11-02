@@ -135,7 +135,7 @@ function Certificate({
   return (
     <div
       style={cssVars(tier)}
-      className="relative isolate aspect-[297/210] w-full overflow-hidden bg-(color:--paper) font-serif text-(color:--ink)"
+      className="relative isolate aspect-297/210 w-full overflow-hidden bg-(color:--paper) font-serif text-(color:--ink)"
     >
       {/* outer frame */}
       <div
@@ -208,7 +208,7 @@ function Certificate({
             <span className="h-px w-[5cqw] bg-(color:--accent)" />
           </div>
           <p className="text-[0.8cqw] font-medium tracking-[0.35em] uppercase opacity-60">
-            Blood Donation Network
+            Blood Donation Platform
           </p>
         </div>
 

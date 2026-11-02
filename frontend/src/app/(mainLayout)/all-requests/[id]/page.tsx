@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlertCircle, CheckCircle2, Clock, MapPin, Phone } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,8 +9,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  Droplet,
+  HeartHandshake,
+  Info,
+  MapPin,
+  MessageSquareQuote,
+  Phone,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { URGENCY } from "@/components/module/request/request-card";
 import { bloodLabel } from "@/lib/blood";
 import { timeAgo } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -32,6 +43,24 @@ const CLOSED_TEXT: Record<string, string> = {
   FULFILLED:
     "All bags are claimed right now. If a donor drops out, a slot can open again.",
 };
+
+const TONE = {
+  action: {
+    icon: HeartHandshake,
+    card: "border-primary/40 bg-primary/5",
+    chip: "bg-primary/10 text-primary",
+  },
+  success: {
+    icon: CheckCircle2,
+    card: "border-emerald-500/40 bg-emerald-500/5",
+    chip: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  },
+  muted: {
+    icon: Info,
+    card: "border-dashed bg-muted/30",
+    chip: "bg-muted text-muted-foreground",
+  },
+} as const;
 
 type Panel = {
   tone: "action" | "success" | "muted";
@@ -132,7 +161,8 @@ export default async function RequestPage({
   const { data: session } = await userServices.getSessionServer();
   const user = session?.user;
 
-  if (!user) redirect(`/login?next=${encodeURIComponent(`/all-requests/${id}`)}`);
+  if (!user)
+    redirect(`/login?next=${encodeURIComponent(`/all-requests/${id}`)}`);
 
   // The backend only serves requests to donor and requester accounts
   if (user.role && user.role !== "USER") {
@@ -171,81 +201,135 @@ export default async function RequestPage({
 
   const request = data;
   const panel = describeOffer(request);
+  const tone = TONE[panel.tone];
+  const ToneIcon = tone.icon;
+  const urgency = URGENCY[request.urgency];
+  const critical = request.urgency === "CRITICAL";
   const unlocked =
     request.myMatch.status === "ACCEPTED" ||
     request.myMatch.status === "COMPLETED";
 
   const place = request.union
-    ? `${request.union.name}, ${request.upazila.name}`
-    : `${request.upazila.name} (whole upazila)`;
-  const percent = Math.min(
-    100,
-    Math.round((request.unitsAccepted / request.unitsNeeded) * 100),
-  );
+    ? `${request.union.name}, ${request.upazila.name}, ${request.upazila.district.name}`
+    : `${request.upazila.name} (whole upazila), ${request.upazila.district.name}`;
   const stillNeeded = request.unitsNeeded - request.unitsAccepted;
 
   return (
-    <main className="container mx-auto max-w-2xl space-y-6 px-4 py-10">
-      <Card>
-        <CardHeader>
-          <div className="flex items-start gap-4">
-            <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xl font-bold text-primary">
-              {bloodLabel(request.bloodType)}
-            </div>
+    <main className="relative isolate overflow-hidden ">
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-size-[3rem_3rem] mask-[radial-gradient(ellipse_at_top,black,transparent_65%)]"
+      />
+      <div
+        aria-hidden
+        className="absolute -top-24 left-1/2 -z-10 size-112 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl"
+      />
 
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="truncate">
+      <div className="container mx-auto max-w-2xl space-y-6 px-4 py-10">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2"
+          render={<Link href="/all-requests" />}
+          nativeButton={false}
+        >
+          <ArrowLeft className="size-4" />
+          All requests
+        </Button>
+
+        {/* summary */}
+        <Card className="relative gap-5 overflow-hidden shadow-lg motion-safe:animate-fade-up">
+          {critical && (
+            <div
+              aria-hidden
+              className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-destructive via-primary to-destructive"
+            />
+          )}
+
+          <CardHeader>
+            <div className="flex items-start gap-4">
+              <div
+                className={cn(
+                  "relative flex size-16 shrink-0 items-center justify-center rounded-xl bg-linear-to-br text-2xl font-bold text-primary-foreground shadow-md",
+                  urgency.tile,
+                )}
+              >
+                {bloodLabel(request.bloodType)}
+                {critical && (
+                  <span className="absolute -top-1 -right-1 flex size-3">
+                    <span className="absolute inline-flex size-full rounded-full bg-destructive opacity-75 motion-safe:animate-ping" />
+                    <span className="relative inline-flex size-3 rounded-full border-2 border-card bg-destructive" />
+                  </span>
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1 space-y-2">
+                <CardTitle className="text-xl">
                   {request.hospitalName ?? "Hospital not specified"}
                 </CardTitle>
-                <RequestStatusBadge status={request.status} />
-                <UrgencyBadge urgency={request.urgency} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <RequestStatusBadge status={request.status} />
+                  <UrgencyBadge urgency={request.urgency} />
+                </div>
+                <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin className="size-3.5" />
+                    {place}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="size-3.5" />
+                    {timeAgo(request.createdAt)}
+                  </span>
+                </CardDescription>
               </div>
-              <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="size-3.5" />
-                  {place}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="size-3.5" />
-                  {timeAgo(request.createdAt)}
-                </span>
-              </CardDescription>
             </div>
-          </div>
-        </CardHeader>
+          </CardHeader>
 
-        <CardContent className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              {request.unitsAccepted} of {request.unitsNeeded} donors committed
-            </span>
-            <span className="font-medium">
-              {stillNeeded} bag{stillNeeded === 1 ? "" : "s"} needed
-            </span>
-          </div>
-          <Progress value={percent} className="h-1.5" />
-        </CardContent>
-      </Card>
+          <CardContent className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Droplet className="size-3.5 text-primary" />
+                {request.unitsAccepted} of {request.unitsNeeded} committed
+              </span>
+              <span className="font-medium">
+                {stillNeeded} bag{stillNeeded === 1 ? "" : "s"} needed
+              </span>
+            </div>
+            <div className="flex gap-1" aria-hidden>
+              {Array.from({ length: request.unitsNeeded }, (_, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    "h-2 flex-1 rounded-full",
+                    i < request.unitsAccepted ? "bg-primary" : "bg-muted",
+                  )}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card
-        className={cn(
-          panel.tone === "success" && "border-emerald-500/40 bg-emerald-500/5",
-          panel.tone === "action" && "border-primary/40 bg-primary/5",
-        )}
-      >
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {panel.tone === "success" && (
-              <CheckCircle2 className="size-5 text-emerald-600" />
-            )}
-            {panel.title}
-          </CardTitle>
-          <CardDescription>{panel.text}</CardDescription>
-        </CardHeader>
+        {/* what the donor can do now */}
+        <Card
+          style={{ animationDelay: "100ms" }}
+          className={cn("motion-safe:animate-fade-up", tone.card)}
+        >
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-4">
+              <div
+                className={cn(
+                  "flex size-11 shrink-0 items-center justify-center rounded-full",
+                  tone.chip,
+                )}
+              >
+                <ToneIcon className="size-5" />
+              </div>
+              <div className="space-y-1">
+                <CardTitle>{panel.title}</CardTitle>
+                <CardDescription>{panel.text}</CardDescription>
+              </div>
+            </div>
 
-        {(panel.showAccept || panel.showHistoryLink) && (
-          <CardContent>
             {panel.showAccept && (
               <OfferActions
                 requestId={request.id}
@@ -264,48 +348,56 @@ export default async function RequestPage({
               </Button>
             )}
           </CardContent>
+        </Card>
+
+        {/* unlocked after accepting */}
+        {unlocked && (request.patientName || request.contactPhone) && (
+          <Card
+            style={{ animationDelay: "200ms" }}
+            className="motion-safe:animate-fade-up"
+          >
+            <CardHeader>
+              <CardTitle>Contact details</CardTitle>
+              <CardDescription>
+                Shared with you because you accepted this request.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {request.patientName && (
+                <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+                  <p className="text-xs text-muted-foreground">Patient</p>
+                  <p className="font-medium">{request.patientName}</p>
+                </div>
+              )}
+              {request.contactPhone && (
+                <Button
+                  className="w-full shadow-md shadow-primary/20 sm:w-auto"
+                  render={<a href={`tel:${request.contactPhone}`} />}
+                  nativeButton={false}
+                >
+                  <Phone className="size-4" />
+                  Call {request.contactPhone}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         )}
-      </Card>
 
-      {unlocked && (request.patientName || request.contactPhone) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact details</CardTitle>
-            <CardDescription>
-              Shared with you because you accepted this request.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {request.patientName && (
-              <p>
-                <span className="text-muted-foreground">Patient:</span>{" "}
-                <span className="font-medium">{request.patientName}</span>
-              </p>
-            )}
-            {request.contactPhone && (
-              <Button
-                variant="outline"
-                render={<a href={`tel:${request.contactPhone}`} />}
-                nativeButton={false}
-              >
-                <Phone className="size-4" />
-                Call {request.contactPhone}
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {request.note && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Note from the requester</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            {request.note}
-          </CardContent>
-        </Card>
-      )}
+        {request.note && (
+          <Card
+            style={{ animationDelay: "300ms" }}
+            className="motion-safe:animate-fade-up"
+          >
+            <CardContent className="flex gap-3">
+              <MessageSquareQuote className="mt-0.5 size-5 shrink-0 text-primary" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Note from the requester</p>
+                <p className="text-sm text-muted-foreground">{request.note}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </main>
   );
 }

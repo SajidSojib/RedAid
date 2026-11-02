@@ -28,6 +28,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { BLOOD_TYPE_OPTIONS } from "@/lib/validations/signup";
 import { URGENCY_OPTIONS } from "@/lib/validations/request";
 import type { LocationOption } from "@/service/location.service";
+import { SlidersHorizontal } from "lucide-react";
 
 type Props = {
   divisions: LocationOption[];
@@ -145,17 +146,14 @@ export function RequestFilters({
     });
 
   return (
-    <Sidebar
-      className="
-    top-(--header-height)
-    h-[calc(100svh-var(--header-height))]!
-    md:!left-[max(0px,calc((100vw-80rem)/2))]
-  "
-    >
+    <Sidebar className="sticky! top-(--header-height) h-[calc(100svh-var(--header-height))]!">
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold">Filters</h2>
+            <h2 className="flex items-center gap-2 text-sm font-semibold">
+              <SlidersHorizontal className="size-4 text-primary" />
+              Filters
+            </h2>
             {activeCount > 0 && (
               <Badge variant="secondary">{activeCount}</Badge>
             )}
@@ -185,7 +183,7 @@ export function RequestFilters({
                   onPressedChange={() =>
                     toggle("bloodType", bloodTypes, type.value)
                   }
-                  className="h-9 aria-pressed:border-primary! aria-pressed:bg-primary! aria-pressed:text-primary-foreground!"
+                  className="h-9 transition-all hover:border-primary/50 hover:text-primary aria-pressed:border-primary! aria-pressed:bg-primary! aria-pressed:text-primary-foreground!"
                 >
                   {type.label}
                 </Toggle>
