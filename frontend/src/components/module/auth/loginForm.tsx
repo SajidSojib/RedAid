@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
-import { Loader } from "lucide-react";
+import { AlertCircle, Loader } from "lucide-react";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
@@ -69,7 +69,12 @@ export function LoginForm() {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Welcome{" "}
+          <span className="bg-linear-to-r from-primary via-destructive to-primary bg-size-[200%_auto] bg-clip-text text-transparent motion-safe:animate-gradient">
+            back
+          </span>
+        </h1>
         <p className="text-muted-foreground">Log in to your RedAid account.</p>
       </div>
 
@@ -112,8 +117,9 @@ export function LoginForm() {
         {formError && (
           <p
             role="alert"
-            className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
           >
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
             {formError}
           </p>
         )}

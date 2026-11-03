@@ -74,7 +74,7 @@ export function Logo({
   return (
     <span className={cn("inline-flex items-center ", className)}>
       <LogoMark className={markClassName} />
-      <span className="text-xl leading-none tracking-tight">
+      <span className="text-xl xl:text-2xl leading-none tracking-tight">
         <span className="font-bold text-foreground">Red</span>
         <span className="font-bold text-primary">Aid</span>
       </span>

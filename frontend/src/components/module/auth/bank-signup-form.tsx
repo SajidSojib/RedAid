@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
 import { InputField } from "@/components/common/inputField";
-import { TextareaField } from "@/components/common/textareaField"; // adjust to where yours lives
+import { TextareaField } from "@/components/common/textareaField"; 
 import { registerBank } from "@/action/user.action";
 import { useImageUpload } from "@/hooks/use-image-upload";
 import { bankSignupSchema } from "@/lib/validations/signup";
@@ -100,7 +100,6 @@ export function BankSignupForm({
     >
       <FormSection
         title="Account owner"
-        description="The person who will manage this blood bank on RedAid."
       >
         <FieldGroup className="gap-5">
           <form.Field name="image">
@@ -180,7 +179,6 @@ export function BankSignupForm({
 
       <FormSection
         title="Blood bank details"
-        description="An admin checks these before your bank appears in search."
       >
         <FieldGroup className="gap-5">
           <div className="grid gap-5 sm:grid-cols-2">
@@ -211,7 +209,6 @@ export function BankSignupForm({
                 label="Bank contact phone"
                 type="tel"
                 placeholder="Number requesters can call"
-                description="Shown publicly on your bank's page."
               />
             )}
           </form.Field>
@@ -231,8 +228,7 @@ export function BankSignupForm({
       </FormSection>
 
       <FormSection
-        title="Location"
-        description="Choose the upazila your bank is in."
+        title="Bank Location"
       >
         <form.Field name="upazilaId">
           {(field) => {

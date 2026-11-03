@@ -28,6 +28,7 @@ import {
 } from "@/routes/dashboardRoutes";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { Logo, LogoMark } from "../common/logo";
 
 const ROLE_LABEL: Record<UserRole, string> = {
   USER: "Donor & requester",
@@ -72,7 +73,6 @@ export function AppSidebar({
       await authClient.signOut({
         fetchOptions: {
           onSuccess: () => {
-            // router.push("/login");
             router.refresh();
           },
         },
@@ -86,10 +86,21 @@ export function AppSidebar({
   };
 
   return (
-    <Sidebar
-      collapsible="icon"
-      className="top-0 h-full"
-    >
+    <Sidebar collapsible="icon" className="top-0 h-full">
+      <SidebarMenuItem>
+        <Link
+          href="/"
+          aria-label="RedAid"
+          className="flex items-center justify-center gap-2 border-b-2 border-primary py-2.5"
+        >
+          <LogoMark className="size-8 shrink-0" />
+          <span className="text-xl leading-none tracking-tight group-data-[collapsible=icon]:hidden xl:text-2xl">
+            <span className="font-bold text-foreground">Red</span>
+            <span className="font-bold text-primary">Aid</span>
+          </span>
+        </Link>
+      </SidebarMenuItem>
+
       <SidebarContent>
         <SidebarGroup>
           {isKnownRole(role) && (
@@ -122,24 +133,25 @@ export function AppSidebar({
         <SidebarMenu className="space-y-2">
           <SidebarMenuItem>
             <SidebarMenuButton
-              tooltip="Go to homepage"
-              render={<Link className="bg-secondary justify-center" href="/" />}
+              tooltip="Go to Homepage"
+              className="justify-center bg-secondary group-data-[collapsible=icon]:justify-center"
+              render={<Link href="/" />}
             >
               <Home />
-              <span>Go to homepage</span>
+              <span>Go to Homepage</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          <SidebarMenuItem className="w-full">
+          <SidebarMenuItem>
             <SidebarMenuButton
               onClick={handleLogout}
-              className="bg-primary justify-center text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground"
               tooltip="Logout"
+              className="justify-center bg-primary text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground group-data-[collapsible=icon]:justify-center"
             >
               {isSubmitting ? (
-                <Loader className="h-4 w-4 animate-spin" />
+                <Loader className="size-4 animate-spin" />
               ) : (
-                <LogOut className="h-4 w-4" />
+                <LogOut className="size-4" />
               )}
               <span>Logout</span>
             </SidebarMenuButton>

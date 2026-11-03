@@ -181,13 +181,12 @@ export function DonorSignupForm({
 
       <FormSection
         title="Donor details"
-        description="Your blood type is used to match you with people who need it."
       >
         <FieldGroup className="gap-5">
           <form.Field name="bloodType">
             {(field) => {
               return (
-                <BloodTypePicker field={field} label="Blood type needed"></BloodTypePicker>
+                <BloodTypePicker field={field} label="Blood Type"></BloodTypePicker>
               );
             }}
           </form.Field>
@@ -199,7 +198,6 @@ export function DonorSignupForm({
                 label="Last donation date (optional)"
                 type="date"
                 max={new Date().toISOString().slice(0, 10)}
-                description="Leave empty if you've never donated. We use it to work out when you can donate again."
               />
             )}
           </form.Field>
@@ -208,7 +206,6 @@ export function DonorSignupForm({
 
       <FormSection
         title="Where you can donate"
-        description="You'll be notified when someone in these areas needs your blood type."
       >
         <form.Field name="serviceAreas" mode="array">
           {(field) => {
