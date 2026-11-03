@@ -21,7 +21,6 @@ import {
   MessageSquareQuote,
   Phone,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { URGENCY } from "@/components/module/request/request-card";
 import { bloodLabel } from "@/lib/blood";
 import { timeAgo } from "@/lib/time";
@@ -31,8 +30,12 @@ import {
   type DonorRequestView,
 } from "@/service/request.service";
 import { userServices } from "@/service/user.service";
-import { RequestStatusBadge, UrgencyBadge } from "@/components/module/user/my-requests/status-badges";
+import {
+  RequestStatusBadge,
+  UrgencyBadge,
+} from "@/components/module/user/my-requests/status-badges";
 import { OfferActions } from "@/components/module/request/offer-actions";
+import { DonateButton } from "@/components/module/request/donate-button";
 
 export const metadata = { title: "Blood request · RedAid" };
 
@@ -79,6 +82,34 @@ function describeOffer(request: DonorRequestView): Panel {
     showDecline: false,
     showHistoryLink: false,
   };
+const status = request.myMatch?.status ?? null;
+const canAnswer = !status || status === "NOTIFIED" || status === "DECLINED";
+
+if (open && canAnswer && !request.canRespond) {
+  return {
+    ...base,
+    tone: "muted",
+    title: "You can't respond right now",
+    text: request.blockedReason ?? "This request isn't available to you.",
+  };
+}
+  // A donor who was never notified: they can still offer to help while it's open
+  if (!request.myMatch) {
+    return open
+      ? {
+          ...base,
+          tone: "action",
+          title: "Can you help?",
+          text: "If you are eligible and your blood type is compatible, you can offer to donate.",
+          showAccept: true,
+        }
+      : {
+          ...base,
+          tone: "muted",
+          title: "No longer open",
+          text: CLOSED_TEXT[request.status] ?? "This request is closed.",
+        };
+  }
 
   switch (request.myMatch.status) {
     case "ACCEPTED":
@@ -206,8 +237,8 @@ export default async function RequestPage({
   const urgency = URGENCY[request.urgency];
   const critical = request.urgency === "CRITICAL";
   const unlocked =
-    request.myMatch.status === "ACCEPTED" ||
-    request.myMatch.status === "COMPLETED";
+    request.myMatch?.status === "ACCEPTED" ||
+    request.myMatch?.status === "COMPLETED";
 
   const place = request.union
     ? `${request.union.name}, ${request.upazila.name}, ${request.upazila.district.name}`
@@ -215,7 +246,7 @@ export default async function RequestPage({
   const stillNeeded = request.unitsNeeded - request.unitsAccepted;
 
   return (
-    <main className="relative isolate overflow-hidden ">
+    <main className="relative isolate overflow-hidden">
       <div
         aria-hidden
         className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-size-[3rem_3rem] mask-[radial-gradient(ellipse_at_top,black,transparent_65%)]"
@@ -330,14 +361,20 @@ export default async function RequestPage({
               </div>
             </div>
 
-            {panel.showAccept && (
-              <OfferActions
-                requestId={request.id}
-                matchId={request.myMatch.id}
-                hospitalName={request.hospitalName}
-                canDecline={panel.showDecline}
-              />
-            )}
+            {panel.showAccept &&
+              (request.myMatch ? (
+                <OfferActions
+                  requestId={request.id}
+                  matchId={request.myMatch.id}
+                  hospitalName={request.hospitalName}
+                  canDecline={panel.showDecline}
+                />
+              ) : (
+                <DonateButton
+                  requestId={request.id}
+                  hospitalName={request.hospitalName}
+                />
+              ))}
             {panel.showHistoryLink && (
               <Button
                 variant="outline"

@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, BellRing, Clock, MapPin, ShieldCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { CursorGlow } from "./cursor-glow";
 import { HeroOrbit } from "./hero-orbit";
 
@@ -17,7 +15,7 @@ const delay = (ms: number) => ({ animationDelay: `${ms}ms` });
 
 export function Hero() {
   return (
-    <section className="relative isolate overflow-hidden min-h-[calc(100vh-4rem)]">
+    <section className="relative isolate flex flex-col overflow-hidden xl:min-h-[calc(100svh-var(--header-height))]">
       {/* background: faded grid + soft glow */}
       <div
         aria-hidden
@@ -29,7 +27,7 @@ export function Hero() {
       />
       <CursorGlow />
 
-      <div className="container mx-auto grid items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-2 lg:gap-8 lg:py-28">
+      <div className="container mx-auto grid flex-1 items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-2 lg:gap-8 lg:py-28">
         {/* left: copy */}
         <div className="space-y-8">
           <Badge
@@ -106,7 +104,6 @@ export function Hero() {
             ))}
           </dl>
         </div>
-
         {/* right: sample request card */}
         <HeroOrbit />
       </div>

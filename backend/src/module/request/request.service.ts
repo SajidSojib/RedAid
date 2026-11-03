@@ -312,18 +312,94 @@ const feedSelect = { ...publicRequestSelect, requesterId: true } as const;
 type FeedRow = {
   id: string;
   requesterId: string;
+  status?: RequestStatus;
   bloodType: BloodType;
   unitsNeeded: number;
   unitsAccepted: number;
 };
 
-// What the logged-in donor can do with each request on the page
-const getViewerStates = async (userId: string, rows: FeedRow[]) => {
-  const [me, matches] = await Promise.all([
+type ViewerContext = {
+  me: { bloodType: BloodType | null } | null;
+  eligibility: ReturnType<typeof getEligibility>;
+  hasActiveCommitment: boolean;
+};
+
+const getViewerContext = async (userId: string): Promise<ViewerContext> => {
+  const [me, activeCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { bloodType: true, lastDonationDate: true },
     }),
+    prisma.donationMatch.count({
+      where: { donorId: userId, status: MatchStatus.ACCEPTED },
+    }),
+  ]);
+
+  return {
+    me,
+    eligibility: getEligibility(me?.lastDonationDate ?? null),
+    hasActiveCommitment: activeCount > 0,
+  };
+};
+
+// One place that decides "can this user respond, and if not, why"
+const computeViewerState = (
+  userId: string,
+  row: {
+    requesterId: string;
+    status?: RequestStatus; // the feed only loads OPEN requests, so it doesn't select it
+    bloodType: BloodType;
+    unitsNeeded: number;
+    unitsAccepted: number;
+  },
+  matchStatus: MatchStatus | null,
+  { me, eligibility, hasActiveCommitment }: ViewerContext,
+): ViewerState => {
+  const isOwner = row.requesterId === userId;
+  const alreadyAccepted =
+    matchStatus === MatchStatus.ACCEPTED ||
+    matchStatus === MatchStatus.COMPLETED;
+
+  let blockedReason: string | null = null;
+
+  if (!isOwner && !alreadyAccepted) {
+    if (matchStatus === MatchStatus.WITHDRAWN) {
+      blockedReason =
+        "You withdrew from this request earlier, so you can't accept it again";
+    } else if (matchStatus === MatchStatus.NO_SHOW) {
+      blockedReason =
+        "The requester marked you as not showing up, so you can't accept this request again";
+    } else if (matchStatus === MatchStatus.CANCELLED) {
+      blockedReason = "This request was closed for you";
+    } else if (row.status !== undefined && row.status !== RequestStatus.OPEN) {
+      blockedReason = "This request is no longer open";
+    } else if (row.unitsAccepted >= row.unitsNeeded) {
+      blockedReason = "All bags have been claimed";
+    } else if (!me?.bloodType) {
+      blockedReason = "Add your blood type to your profile to donate";
+    } else if (!COMPATIBLE_Donors[row.bloodType].includes(me.bloodType)) {
+      blockedReason = "Your blood type can't donate to this patient";
+    } else if (!eligibility.eligible) {
+      blockedReason = `You can donate again on ${eligibility.nextEligibleDate
+        ?.toISOString()
+        .slice(0, 10)}`;
+    } else if (hasActiveCommitment) {
+      blockedReason =
+        "You already have an accepted donation in progress. Complete or withdraw from it first";
+    }
+  }
+
+  return {
+    isOwner,
+    matchStatus,
+    canRespond: !isOwner && !alreadyAccepted && blockedReason === null,
+    blockedReason,
+  };
+};
+
+const getViewerStates = async (userId: string, rows: FeedRow[]) => {
+  const [context, matches] = await Promise.all([
+    getViewerContext(userId),
     prisma.donationMatch.findMany({
       where: { donorId: userId, requestId: { in: rows.map((row) => row.id) } },
       select: { requestId: true, status: true },
@@ -331,43 +407,18 @@ const getViewerStates = async (userId: string, rows: FeedRow[]) => {
   ]);
 
   const statusByRequest = new Map(matches.map((m) => [m.requestId, m.status]));
-  const eligibility = getEligibility(me?.lastDonationDate ?? null);
   const states = new Map<string, ViewerState>();
 
   for (const row of rows) {
-    const isOwner = row.requesterId === userId;
-    const matchStatus = statusByRequest.get(row.id) ?? null;
-    const alreadyAccepted =
-      matchStatus === MatchStatus.ACCEPTED ||
-      matchStatus === MatchStatus.COMPLETED;
-
-    let blockedReason: string | null = null;
-
-    if (!isOwner && !alreadyAccepted) {
-      if (
-        matchStatus === MatchStatus.CANCELLED ||
-        matchStatus === MatchStatus.NO_SHOW
-      ) {
-        blockedReason = "You can no longer respond to this request";
-      } else if (row.unitsAccepted >= row.unitsNeeded) {
-        blockedReason = "All bags have been claimed";
-      } else if (!me?.bloodType) {
-        blockedReason = "Add your blood type to your profile to donate";
-      } else if (!COMPATIBLE_Donors[row.bloodType].includes(me.bloodType)) {
-        blockedReason = "Your blood type can't donate to this patient";
-      } else if (!eligibility.eligible) {
-        blockedReason = `You can donate again on ${eligibility.nextEligibleDate
-          ?.toISOString()
-          .slice(0, 10)}`;
-      }
-    }
-
-    states.set(row.id, {
-      isOwner,
-      matchStatus,
-      canRespond: !isOwner && !alreadyAccepted && blockedReason === null,
-      blockedReason,
-    });
+    states.set(
+      row.id,
+      computeViewerState(
+        userId,
+        row,
+        statusByRequest.get(row.id) ?? null,
+        context,
+      ),
+    );
   }
 
   return states;
@@ -586,13 +637,21 @@ const getDonationRequestById = async (requestId: string, userId: string) => {
     select: { id: true, status: true, notifiedAt: true, respondedAt: true },
   });
 
-  if (!myMatch) {
-    throw new ApiError(404, "Donation request not found"); // don't reveal that it exists
+  // Donors who were never notified can still view an OPEN request (it's public in the feed)
+  if (!myMatch && request.status !== RequestStatus.OPEN) {
+    throw new ApiError(404, "Donation request not found");
   }
 
   const unlocked =
-    myMatch.status === MatchStatus.ACCEPTED ||
-    myMatch.status === MatchStatus.COMPLETED;
+    myMatch?.status === MatchStatus.ACCEPTED ||
+    myMatch?.status === MatchStatus.COMPLETED;
+
+  const state = computeViewerState(
+    userId,
+    request,
+    myMatch?.status ?? null,
+    await getViewerContext(userId),
+  );
 
   return {
     viewer: "DONOR" as const,
@@ -612,9 +671,11 @@ const getDonationRequestById = async (requestId: string, userId: string) => {
       patientName: request.patientName,
       contactPhone: request.contactPhone,
     }),
-    myMatch,
+    myMatch: myMatch ?? null,
+    canRespond: state.canRespond,
+    blockedReason: state.blockedReason,
   };
-};
+};;
 
 // Public feed. Patient name and note are only included for logged-in users.
 const getAllDonationRequests = async (

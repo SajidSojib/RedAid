@@ -92,7 +92,9 @@ export type DonorRequestView = {
     status: MatchStatus;
     notifiedAt: string;
     respondedAt: string | null;
-  };
+  } | null;
+  canRespond: boolean;
+  blockedReason: string | null;
 };
 
 export type MyRequest = {
