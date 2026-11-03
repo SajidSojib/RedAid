@@ -13,6 +13,7 @@ import { matchesRouter } from "./module/match/match.route";
 import { notificationRouter } from "./module/notification/notification.route";
 import { achievementRouter } from "./module/achievement/achievement.route";
 import { donationRouter } from "./module/donation/donation.route";
+import { leaderboardRouter } from "./module/leaderboard/leaderboard.route";
 
 const app: Application = express();
 
@@ -37,6 +38,7 @@ app.use("/api/matches", matchesRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/achievements", achievementRouter);
 app.use("/api/donations", donationRouter);
+app.use("/api/leaderboard", leaderboardRouter);
 
 //* error handler
 app.use(notFound);

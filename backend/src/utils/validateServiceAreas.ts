@@ -8,6 +8,35 @@ export type ServiceAreaInput = {
   unionId?: string | null;
 };
 
+const validateLocation = async (upazilaId: string, unionId?: string | null) => {
+  const upazila = await prisma.upazila.findUnique({
+    where: { id: upazilaId },
+    select: { id: true },
+  });
+
+  if (!upazila) {
+    throw new ApiError(400, "Selected upazila does not exist");
+  }
+
+  if (unionId !== undefined && unionId !== null) {
+    const union = await prisma.union.findUnique({
+      where: { id: unionId },
+      select: { id: true, upazilaId: true },
+    });
+
+    if (!union) {
+      throw new ApiError(400, "Selected union does not exist");
+    }
+
+    if (union.upazilaId !== upazilaId) {
+      throw new ApiError(
+        400,
+        "The selected union does not belong to the selected upazila",
+      );
+    }
+  }
+};
+
 // Returns the cleaned list: unionId is always a string or null, never "" or undefined
 export const validateServiceAreas = async (input: ServiceAreaInput[]) => {
   if (!Array.isArray(input) || input.length === 0) {
