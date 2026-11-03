@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useForm } from "@tanstack/react-form";
-import { Loader, Minus, Plus } from "lucide-react";
+import { CheckCircle2, Loader, Minus, Plus, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -29,6 +29,23 @@ import { AreaSelector, SelectedArea } from "../auth/area-selector";
 import { FormSection } from "../auth/form-section";
 
 type Outcome = { result: CreateRequestResult; unionSelected: boolean };
+
+const URGENCY_TONE: Record<string, { active: string; dot: string }> = {
+  NORMAL: {
+    active: "border-primary bg-primary/5 ring-primary",
+    dot: "bg-primary",
+  },
+  URGENT: {
+    active: "border-amber-500 bg-amber-500/5 ring-amber-500",
+    dot: "bg-amber-500",
+  },
+  CRITICAL: {
+    active: "border-destructive bg-destructive/5 ring-destructive",
+    dot: "bg-destructive",
+  },
+};
+
+
 
 function describeOutcome({ result, unionSelected }: Outcome) {
   const count = result.notifiedDonors;
@@ -101,12 +118,24 @@ export function RequestForm({ ownPhone }: { ownPhone?: string | null }) {
 
   if (outcome) {
     return (
-      <div className="space-y-6 pt-4">
+      <div className="space-y-6 py-4 text-center">
+        <div className="relative mx-auto size-16">
+          <span
+            aria-hidden
+            className="absolute inset-0 rounded-full bg-emerald-500/30 motion-safe:animate-ping [animation-duration:2.5s]"
+          />
+          <div className="relative flex size-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="size-8" strokeWidth={1.6} />
+          </div>
+        </div>
+
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">
             Request sent
           </h1>
-          <p className="text-muted-foreground">{describeOutcome(outcome)}</p>
+          <p className="mx-auto max-w-md text-balance text-muted-foreground">
+            {describeOutcome(outcome)}
+          </p>
           {outcome.result.notifiedDonors > 0 && (
             <p className="text-sm text-muted-foreground">
               You will get a notification when a donor accepts.
@@ -114,9 +143,9 @@ export function RequestForm({ ownPhone }: { ownPhone?: string | null }) {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
           <Link
-            href={`/all-requests/${outcome.result.request.id}`}
+            href={`/dashboard/my-requests?request=${outcome.result.request.id}`}
             className={buttonVariants()}
           >
             View request
@@ -200,6 +229,7 @@ export function RequestForm({ ownPhone }: { ownPhone?: string | null }) {
                 >
                   {URGENCY_OPTIONS.map((option) => {
                     const active = field.state.value === option.value;
+                    const tone = URGENCY_TONE[option.value];
                     return (
                       <button
                         key={option.value}
@@ -208,13 +238,16 @@ export function RequestForm({ ownPhone }: { ownPhone?: string | null }) {
                         aria-checked={active}
                         onClick={() => field.handleChange(option.value)}
                         className={cn(
-                          "rounded-lg border p-3 text-left transition-all hover:shadow-sm hover:shadow-primary duration-300 ease-in-out hover:-translate-y-0.5 hover:scale-102",
+                          "rounded-lg border p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
                           active
-                            ? "border-primary bg-primary/5 ring-1 ring-primary"
-                            : "hover:bg-secondary/30",
+                            ? cn("ring-1", tone?.active)
+                            : "hover:border-foreground/30 hover:bg-muted/50",
                         )}
                       >
-                        <span className="block text-sm font-semibold">
+                        <span className="flex items-center gap-2 text-sm font-semibold">
+                          <span
+                            className={cn("size-2 rounded-full", tone?.dot)}
+                          />
                           {option.label}
                         </span>
                         <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -317,7 +350,11 @@ export function RequestForm({ ownPhone }: { ownPhone?: string | null }) {
             className="w-full"
             disabled={isSubmitting}
           >
-            {isSubmitting && <Loader className="animate-spin" />}
+            {isSubmitting ? (
+              <Loader className="animate-spin" />
+            ) : (
+              <Send className="size-4" />
+            )}
             Send request
           </Button>
         )}

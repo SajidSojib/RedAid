@@ -1,3 +1,4 @@
+import { LogoMark } from "@/components/common/logo";
 import {
   Award,
   BellRing,
@@ -76,8 +77,8 @@ export function HeroOrbit() {
           aria-hidden
           className="absolute inset-0 rounded-full bg-primary/40 motion-safe:animate-ping"
         />
-        <div className="relative flex size-24 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/30 sm:size-28">
-          <Droplet className="size-10 fill-current sm:size-12" />
+        <div className="relative flex size-24 items-center justify-center rounded-full bg-primary shadow-xl shadow-primary/30 sm:size-28">
+          <LogoMark inverted className="size-14 sm:size-16" />
         </div>
       </div>
 

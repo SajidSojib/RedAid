@@ -26,6 +26,7 @@ import { getNavbarAfterLogin, navbarBeforeLogin } from "@/routes/navRoutes";
 import { Suspense } from "react";
 import { NotificationBell, NotificationBellFallback } from "./notification-bell";
 import { ModeToggle } from "../common/modeToggle";
+import { Logo } from "../common/logo";
 
 export interface MenuItem {
   title: string;
@@ -39,11 +40,8 @@ interface NavbarProps {
   className?: string;
 }
 
-const logo = {
+const logoURL = {
   url: env.NEXT_PUBLIC_FRONTEND_URL,
-  src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/logos/shadcnblockscom-icon.svg",
-  alt: "RedAid logo",
-  title: "RedAid",
 };
 
 function SubMenuLink({ item }: { item: MenuItem }) {
@@ -115,21 +113,11 @@ export default async function Navbar({ className }: NavbarProps) {
         {/* Desktop navigation */}
         <nav className="hidden grid-cols-[1fr_auto_1fr] items-center lg:grid">
           <Link
-            href={logo.url}
-            className="flex items-center gap-2 justify-self-start"
+            href={logoURL.url}
+            className="justify-self-start"
+            aria-label="RedAid home"
           >
-            <Image
-              src={logo.src}
-              alt={logo.alt}
-              width={32}
-              height={32}
-              priority
-              className="h-auto w-8 dark:invert"
-            />
-
-            <span className="text-xl font-semibold tracking-tighter text-primary lg:text-2xl">
-              {logo.title}
-            </span>
+            <Logo className="gap-2" markClassName="size-9" />
           </Link>
 
           {/* Navigation links */}
@@ -170,19 +158,8 @@ export default async function Navbar({ className }: NavbarProps) {
         {/* Mobile navigation */}
         <div className="lg:hidden">
           <div className="flex items-center justify-between">
-            <Link href={logo.url} className="flex items-center gap-2">
-              <Image
-                src={logo.src}
-                alt={logo.alt}
-                width={28}
-                height={28}
-                priority
-                className="h-auto w-7 dark:invert"
-              />
-
-              <span className="text-lg font-semibold tracking-tighter text-primary">
-                {logo.title}
-              </span>
+            <Link href={logoURL.url} aria-label="RedAid home">
+              <Logo markClassName="size-8" />
             </Link>
 
             <div className="flex items-center gap-2">
@@ -208,18 +185,8 @@ export default async function Navbar({ className }: NavbarProps) {
                 <SheetContent className="overflow-y-auto">
                   <SheetHeader>
                     <SheetTitle>
-                      <Link href={logo.url} className="flex items-center gap-2">
-                        <Image
-                          src={logo.src}
-                          alt={logo.alt}
-                          width={32}
-                          height={32}
-                          className="h-auto w-8 dark:invert"
-                        />
-
-                        <span className="text-xl font-semibold tracking-tighter text-primary">
-                          {logo.title}
-                        </span>
+                      <Link href="/" aria-label="RedAid home">
+                        <Logo markClassName="size-8" />
                       </Link>
                     </SheetTitle>
                   </SheetHeader>

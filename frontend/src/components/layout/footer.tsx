@@ -6,6 +6,7 @@ import { ROLE } from "@/constants/roles";
 import { getSidebarRoutes } from "@/routes/dashboardRoutes";
 import { navbarBeforeLogin } from "@/routes/navRoutes";
 import { userServices } from "@/service/user.service";
+import { Logo } from "../common/logo";
 
 function FooterLink({ href, label }: { href: string; label: string }) {
   return (
@@ -102,13 +103,8 @@ export async function Footer() {
         {/* links */}
         <div className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr]">
           <div className="max-w-xs space-y-4">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-md shadow-primary/30">
-                <Droplet className="size-5 fill-current" />
-              </span>
-              <span className="text-lg font-semibold tracking-tight">
-                RedAid
-              </span>
+            <Link href="/" aria-label="RedAid home" className="inline-flex">
+              <Logo markClassName="size-9" />
             </Link>
             <p className="text-sm text-muted-foreground">
               Connecting patients with eligible donors and verified blood banks

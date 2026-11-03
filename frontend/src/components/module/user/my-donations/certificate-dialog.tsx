@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import Link from "next/link";
 
 type Props = {
   donorName: string;
@@ -23,6 +24,7 @@ type Props = {
   awardedAt: string;
   certificateId: string;
   verifyUrl: string;
+  demo?: boolean; // for homepage demo, not a real certificate
 };
 
 type Tier = {
@@ -120,6 +122,7 @@ function Certificate({
   awardedAt,
   certificateId,
   verifyUrl,
+  demo = false,
 }: Props) {
   const tier = getTier(badge);
   const awarded = new Date(awardedAt).toLocaleDateString("en-GB", {
@@ -185,6 +188,17 @@ function Certificate({
         aria-hidden="true"
         className="absolute top-1/2 left-1/2 size-[34cqw] -translate-x-1/2 -translate-y-1/2 fill-current text-(color:--accent) opacity-[0.06]"
       />
+
+      {demo && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 flex items-center justify-center"
+        >
+          <span className="-rotate-20 text-[12cqw] font-bold tracking-[0.3em] uppercase opacity-[0.07]">
+            Sample
+          </span>
+        </div>
+      )}
 
       {/* content */}
       <div
@@ -320,27 +334,41 @@ function Certificate({
 
 export default function CertificateDialog(props: Props) {
   const [open, setOpen] = useState(false);
+  const {demo} = props;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <Award className="size-4" />
-        Certificate
+      <DialogTrigger
+        render={
+          demo ? (
+            <button
+              type="button"
+              className="relative inline-flex cursor-pointer items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-xs font-medium transition-colors hover:border-primary/40 hover:text-primary"
+            />
+          ) : (
+            <Button variant="outline" size="sm" />
+          )
+        }
+      >
+        <Award className={demo ? "size-3 text-primary" : "size-4"} />
+        {demo ? "View sample" : "Certificate"}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>{title(props.badge)} certificate</DialogTitle>
+          <DialogTitle>
+            {title(props.badge)} certificate{demo && " (sample)"}
+          </DialogTitle>
           <DialogDescription>
-            Preview it exactly as it will print. Choose Save as PDF in the print
-            window to keep a digital copy.
+            {demo
+              ? "This is how the certificate looks at this milestone. Yours will carry your own name, date and QR code."
+              : "Preview it exactly as it will print. Choose Save as PDF in the print window to keep a digital copy."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="@container max-h-[65vh] overflow-y-auto rounded-lg border bg-muted/40 p-2 sm:p-4">
           <div className="group relative overflow-hidden shadow-xl ring-1 ring-border">
             <Certificate {...props} />
-            {/* shine on hover, preview only */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-linear-to-r from-transparent via-white/50 to-transparent transition-transform duration-1000 ease-out group-hover:translate-x-full motion-reduce:hidden"
@@ -349,10 +377,16 @@ export default function CertificateDialog(props: Props) {
         </div>
 
         <DialogFooter>
-          <Button onClick={() => window.print()}>
-            <Printer className="size-4" />
-            Print or save as PDF
-          </Button>
+          {demo ? (
+            <Button render={<Link href="/all-requests" />} nativeButton={false}>
+              Start earning yours
+            </Button>
+          ) : (
+            <Button onClick={() => window.print()}>
+              <Printer className="size-4" />
+              Print or save as PDF
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
 
