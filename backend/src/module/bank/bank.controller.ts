@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { ApiResponse } from "../../utils/apiResponse";
 import asyncHandler from "../../utils/asyncHandler";
-import { adminServices, bankServices, GetBanksFilters } from "./bank.service";
+import { bankServices, GetBanksFilters } from "./bank.service";
 
 const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
 
@@ -19,12 +19,12 @@ const getBanks = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const verifyBank = asyncHandler(async (req, res) => {
-  const bank = await adminServices.verifyBank(req.params.bankId as string);
+  const bank = await bankServices.verifyBank(req.params.bankId as string);
   new ApiResponse(200, bank, "Blood bank verified").send(res);
 });
 
 const rejectBank = asyncHandler(async (req, res) => {
-  const bank = await adminServices.rejectBank(
+  const bank = await bankServices.rejectBank(
     req.params.bankId as string,
     req.body?.note,
   );

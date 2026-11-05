@@ -37,7 +37,14 @@ const publicBankSelect = {
       id: true,
       name: true,
       bn_name: true,
-      district: { select: { id: true, name: true, bn_name: true } },
+      district: {
+        select: {
+          id: true,
+          name: true,
+          bn_name: true,
+          division: { select: { id: true, name: true, bn_name: true } },
+        },
+      },
     },
   },
   inventory: {
@@ -152,7 +159,6 @@ const getBanks = async (filters: GetBanksFilters = {}, viewer?: Viewer) => {
   };
 };
 
-export const bankServices = { getBanks };
 // ---------- 2. Verify or reject (one place for both) ----------
 
 const review = async (
@@ -230,4 +236,4 @@ const rejectBank = (bankId: string, note?: string) => {
   return review(bankId, VerificationStatus.REJECTED, reason);
 };
 
-export const adminServices = { getBanks, verifyBank, rejectBank };
+export const bankServices = { getBanks, verifyBank, rejectBank };
