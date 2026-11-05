@@ -14,6 +14,7 @@ import { notificationRouter } from "./module/notification/notification.route";
 import { achievementRouter } from "./module/achievement/achievement.route";
 import { donationRouter } from "./module/donation/donation.route";
 import { leaderboardRouter } from "./module/leaderboard/leaderboard.route";
+import { bankRouter } from "./module/bank/bank.route";
 
 const app: Application = express();
 
@@ -39,6 +40,7 @@ app.use("/api/notifications", notificationRouter);
 app.use("/api/achievements", achievementRouter);
 app.use("/api/donations", donationRouter);
 app.use("/api/leaderboard", leaderboardRouter);
+app.use("/api/banks", bankRouter);
 
 //* error handler
 app.use(notFound);

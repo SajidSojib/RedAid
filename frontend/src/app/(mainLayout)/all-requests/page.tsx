@@ -86,6 +86,7 @@ async function RequestResults({
     requestServices.getRequests(backendQuery),
     userServices.getSessionServer(),
   ]);
+  console.log(data)
 
   const user = session?.user;
 

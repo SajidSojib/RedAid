@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,7 +118,9 @@ function renderAction(
   }
 
   return (
-    <p className="text-sm text-muted-foreground">{viewer.blockedReason}</p>
+    <p className="line-clamp-2 text-xs text-muted-foreground">
+      {viewer.blockedReason}
+    </p>
   );
 }
 
@@ -137,12 +139,11 @@ export function RequestCard({
   const critical = request.urgency === "CRITICAL";
   const place = `${request.upazila.name}, ${request.upazila.district.name}`;
   const fullPlace = request.union ? `${request.union.name}, ${place}` : place;
-  console.log(fullPlace)
   const stillNeeded = request.unitsNeeded - request.unitsAccepted;
   const action = renderAction(request, loggedIn, role, returnTo);
 
   return (
-    <Card className="group relative h-full gap-4 overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10">
+    <Card className="group relative h-full gap-0 overflow-hidden py-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10">
       {critical && (
         <div
           aria-hidden
@@ -150,69 +151,77 @@ export function RequestCard({
         />
       )}
 
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "relative flex size-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br text-lg font-bold text-primary-foreground shadow-md transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3",
-              urgency.tile,
-            )}
-          >
-            {bloodLabel(request.bloodType)}
-            {critical && (
-              <span className="absolute -top-1 -right-1 flex size-3">
-                <span className="absolute inline-flex size-full rounded-full bg-destructive opacity-75 motion-safe:animate-ping" />
-                <span className="relative inline-flex size-3 rounded-full border-2 border-card bg-destructive" />
-              </span>
+      <div className="flex gap-4 p-5">
+        <div
+          className={cn(
+            "relative flex size-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-xl font-bold text-primary-foreground shadow-md transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3",
+            urgency.tile,
+          )}
+        >
+          {bloodLabel(request.bloodType)}
+          {critical && (
+            <span className="absolute -top-1 -right-1 flex size-3">
+              <span className="absolute inline-flex size-full rounded-full bg-destructive opacity-75 motion-safe:animate-ping" />
+              <span className="relative inline-flex size-3 rounded-full border-2 border-card bg-destructive" />
+            </span>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <Link
+                href={`/all-requests/${request.id}`}
+                className="block text-xl leading-tight font-semibold tracking-tight after:absolute after:inset-0"
+              >
+                {stillNeeded} bag{stillNeeded === 1 ? "" : "s"} needed
+              </Link>
+              <p className="truncate text-sm text-muted-foreground">
+                {request.hospitalName ?? "Hospital not specified"}
+              </p>
+            </div>
+
+            {request.urgency !== "NORMAL" && (
+              <Badge variant={urgency.variant} className={urgency.className}>
+                {urgency.label}
+              </Badge>
             )}
           </div>
 
-          <div className="min-w-0 flex-1">
-            <CardTitle className="truncate text-base">
-              {request.hospitalName ?? "Hospital not specified"}
-            </CardTitle>
-            <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
-              <MapPin className="size-3.5 shrink-0" />
-              <span className="truncate" title={fullPlace}>
-                {place}
-              </span>
-              <span aria-hidden>·</span>
-              <span className="shrink-0">{timeAgo(request.createdAt)}</span>
+          <div className="space-y-1.5">
+            <div className="flex gap-1" aria-hidden>
+              {Array.from({ length: request.unitsNeeded }, (_, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    "h-1.5 flex-1 rounded-full",
+                    i < request.unitsAccepted ? "bg-primary" : "bg-muted",
+                  )}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {request.unitsAccepted} of {request.unitsNeeded} donors committed
             </p>
           </div>
 
-          {request.urgency !== "NORMAL" && (
-            <Badge variant={urgency.variant} className={urgency.className}>
-              {urgency.label}
-            </Badge>
-          )}
+          <p className="flex items-center gap-x-3 text-xs text-muted-foreground">
+            <span className="flex min-w-0 items-center gap-1" title={fullPlace}>
+              <MapPin className="size-3 shrink-0" />
+              <span className="truncate">{place}</span>
+            </span>
+            <span className="flex shrink-0 items-center gap-1">
+              <Clock className="size-3" />
+              {timeAgo(request.createdAt)}
+            </span>
+          </p>
         </div>
-      </CardHeader>
-
-      <CardContent className="space-y-2">
-        <div className="flex gap-1" aria-hidden>
-          {Array.from({ length: request.unitsNeeded }, (_, i) => (
-            <span
-              key={i}
-              className={cn(
-                "h-1.5 flex-1 rounded-full",
-                i < request.unitsAccepted ? "bg-primary" : "bg-muted",
-              )}
-            />
-          ))}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground tabular-nums">
-            {request.unitsAccepted}/{request.unitsNeeded}
-          </span>{" "}
-          committed · {stillNeeded} bag{stillNeeded === 1 ? "" : "s"} needed
-        </p>
-      </CardContent>
+      </div>
 
       {action && (
-        <CardFooter className="mt-auto border-t bg-muted/30 py-3">
+        <div className="relative z-10 mt-auto flex border-t bg-muted/30 px-5 py-3">
           {action}
-        </CardFooter>
+        </div>
       )}
     </Card>
   );
