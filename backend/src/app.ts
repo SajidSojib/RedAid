@@ -15,6 +15,7 @@ import { achievementRouter } from "./module/achievement/achievement.route";
 import { donationRouter } from "./module/donation/donation.route";
 import { leaderboardRouter } from "./module/leaderboard/leaderboard.route";
 import { bankRouter } from "./module/bank/bank.route";
+import { inventoryRouter } from "./module/inventory/inventory.route";
 
 const app: Application = express();
 
@@ -41,6 +42,7 @@ app.use("/api/achievements", achievementRouter);
 app.use("/api/donations", donationRouter);
 app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/banks", bankRouter);
+app.use("/api/inventory", inventoryRouter);
 
 //* error handler
 app.use(notFound);

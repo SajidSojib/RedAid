@@ -1,9 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { bankServices, UpdateBankInput } from "@/service/bank.service";
-
-
+import { bankServices, InventoryUpdateInput, UpdateBankInput } from "@/service/bank.service";
 
 export const verifyBank = async (id: string) => {
   const res = await bankServices.verifyBank(id);
@@ -23,5 +21,11 @@ export const updateMyBank = async (input: UpdateBankInput) => {
     updateTag("blood-banks");
     revalidatePath("/dashboard/bank-profile");
   }
+  return res;
+};
+
+export const updateMyInventory = async (items: InventoryUpdateInput) => {
+  const res = await bankServices.updateMyInventory(items);
+  if (!res.error) updateTag("blood-banks"); // the public list shows stock
   return res;
 };

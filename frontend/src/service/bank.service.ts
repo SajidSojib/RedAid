@@ -104,6 +104,25 @@ export type UpdateBankInput = {
   upazilaId?: string;
 };
 
+export type InventoryItem = {
+  bloodType: string;
+  unitsAvailable: number;
+  updatedAt: string | null;
+};
+
+export type InventoryPayload = {
+  bank: {
+    id: string;
+    name: string;
+    verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
+  };
+  inventory: InventoryItem[];
+};
+
+export type InventoryUpdateInput = {
+  bloodType: string;
+  unitsAvailable: number;
+}[];
 
 const getBanks = <T extends BanksPayload = PublicBanksPayload>(query: string) =>
   authedRequest<T>(`/banks${query ? `?${query}` : ""}`, {
@@ -126,4 +145,13 @@ const getMyBank = () => authedRequest<BankProfile>("/profile/bank");
 const updateMyBank = (input: UpdateBankInput) =>
   authedRequest<unknown>("/profile/bank", { method: "PATCH", body: input });
 
-export const bankServices = { getBanks, verifyBank, rejectBank, getMyBank, updateMyBank };
+// Not cached: the owner edits this and must always see the latest numbers
+const getMyInventory = () => authedRequest<InventoryPayload>("/inventory/my");
+
+const updateMyInventory = (items: InventoryUpdateInput) =>
+  authedRequest<InventoryPayload>("/inventory/my", {
+    method: "PATCH",
+    body: { items },
+  });
+
+export const bankServices = { getBanks, verifyBank, rejectBank, getMyBank, updateMyBank, getMyInventory, updateMyInventory };
