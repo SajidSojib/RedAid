@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../utils/apiError";
 import { BloodType, VerificationStatus } from "../../../generated/prisma/enums";
 import { validateServiceAreas } from "../../utils/validateServiceAreas";
+import { validateCoordinates } from "../../utils/validateCordinates";
 
 type ServiceAreaInput = {
   upazilaId: string;
@@ -136,7 +137,7 @@ const updateMyProfile = async (
       if (bloodTypeChanged || dateChanged) {
         throw new ApiError(
           403,
-          "Blood type and last donation date can't be changed after a confirmed donation. Please contact an admin.",
+          "Blood type and last donation date can't be changed after a confirmed donation. Please contact Help Center.",
         );
       }
     }
@@ -167,6 +168,14 @@ const getMyBank = async (userId: string) => {
     where: { ownerId: userId },
     include: {
       inventory: true,
+      upazila: {
+        select: {
+          id: true,
+          name: true,
+          bn_name: true,
+          district: { select: { id: true, name: true, bn_name: true } },
+        },
+      },
     },
   });
 
@@ -184,8 +193,11 @@ const updateMyBank = async (userId: string, payload: UpdateMyBankInput) => {
       id: true,
       name: true,
       address: true,
+      phone: true,
       licenseNumber: true,
       upazilaId: true,
+      latitude: true,
+      longitude: true,
       verificationStatus: true,
     },
   });
@@ -222,25 +234,11 @@ const updateMyBank = async (userId: string, payload: UpdateMyBankInput) => {
       throw new ApiError(400, "Selected upazila does not exist");
     }
   }
-
-  // Coordinates are optional: a number sets them, null clears them
-  const validCoord = (v: number, limit: number) =>
-    Number.isFinite(v) && v >= -limit && v <= limit;
-
-  if (
-    payload.latitude !== undefined &&
-    payload.latitude !== null &&
-    !validCoord(payload.latitude, 90)
-  ) {
-    throw new ApiError(400, "Latitude must be between -90 and 90");
-  }
-  if (
-    payload.longitude !== undefined &&
-    payload.longitude !== null &&
-    !validCoord(payload.longitude, 180)
-  ) {
-    throw new ApiError(400, "Longitude must be between -180 and 180");
-  }
+  
+  validateCoordinates(
+    payload.latitude !== undefined ? payload.latitude : bank.latitude,
+    payload.longitude !== undefined ? payload.longitude : bank.longitude,
+  );
 
   // Identity fields are what the admin verified. Changing them invalidates that approval.
   const identityChanged =
@@ -254,7 +252,7 @@ const updateMyBank = async (userId: string, payload: UpdateMyBankInput) => {
     (bank.verificationStatus === VerificationStatus.VERIFIED &&
       identityChanged);
 
-  const updateData = {
+  const fields = {
     ...(name !== undefined && { name }),
     ...(address !== undefined && { address }),
     ...(phone !== undefined && { phone }),
@@ -262,16 +260,30 @@ const updateMyBank = async (userId: string, payload: UpdateMyBankInput) => {
     ...(payload.upazilaId !== undefined && { upazilaId: payload.upazilaId }),
     ...(payload.latitude !== undefined && { latitude: payload.latitude }),
     ...(payload.longitude !== undefined && { longitude: payload.longitude }),
+  };
+
+  // Only values that really differ count as an edit
+  const changed = Object.entries(fields).filter(
+    ([key, value]) => value !== bank[key as keyof typeof bank],
+  );
+
+  if (changed.length === 0) {
+    throw new ApiError(
+      400,
+      bank.verificationStatus === VerificationStatus.REJECTED
+        ? "Update the details the admin pointed out before submitting again"
+        : "Provide at least one field to update",
+    );
+  }
+
+  const updateData = {
+    ...fields,
     ...(reverificationRequired && {
       verificationStatus: VerificationStatus.PENDING,
       verifiedAt: null,
       verificationNote: null,
     }),
   };
-
-  if (Object.keys(updateData).length === 0) {
-    throw new ApiError(400, "Provide at least one field to update");
-  }
 
   const updatedBank = await prisma.bloodBank.update({
     where: { id: bank.id },

@@ -77,6 +77,33 @@ export type PublicBanksPayload = {
 
 export type BanksPayload = AdminBanksPayload | PublicBanksPayload;
 
+export type BankProfile = {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  licenseNumber: string;
+  upazilaId: string;
+  verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
+  verificationNote: string | null;
+  verifiedAt: string | null;
+  createdAt: string;
+  upazila: {
+    id: string;
+    name: string;
+    bn_name: string;
+    district: { id: string; name: string; bn_name: string };
+  };
+};
+
+export type UpdateBankInput = {
+  name?: string;
+  address?: string;
+  phone?: string;
+  licenseNumber?: string;
+  upazilaId?: string;
+};
+
 
 const getBanks = <T extends BanksPayload = PublicBanksPayload>(query: string) =>
   authedRequest<T>(`/banks${query ? `?${query}` : ""}`, {
@@ -94,4 +121,9 @@ const rejectBank = (id: string, note: string) =>
     body: { note },
   });
 
-export const bankServices = { getBanks, verifyBank, rejectBank };
+const getMyBank = () => authedRequest<BankProfile>("/profile/bank");
+
+const updateMyBank = (input: UpdateBankInput) =>
+  authedRequest<unknown>("/profile/bank", { method: "PATCH", body: input });
+
+export const bankServices = { getBanks, verifyBank, rejectBank, getMyBank, updateMyBank };

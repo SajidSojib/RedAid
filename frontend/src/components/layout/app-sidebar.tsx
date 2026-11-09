@@ -107,7 +107,7 @@ export function AppSidebar({
             <SidebarGroupLabel>{ROLE_LABEL[role]}</SidebarGroupLabel>
           )}
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {routes.map((route) => {
                 const Icon = DASHBOARD_ICONS[route.icon];
 

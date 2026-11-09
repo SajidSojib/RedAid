@@ -58,6 +58,10 @@ export default async function ProfilePage() {
       <section className="relative overflow-hidden rounded-2xl border bg-card p-6">
         <div
           aria-hidden
+          className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-size-[2.5rem_2.5rem] opacity-60 mask-[radial-gradient(ellipse_at_top_right,black,transparent_70%)]"
+        />
+        <div
+          aria-hidden
           className="absolute -top-20 -right-16 size-56 rounded-full bg-primary/15 blur-3xl"
         />
         <div className="relative flex flex-wrap items-center gap-4">
