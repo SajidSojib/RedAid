@@ -43,7 +43,7 @@ export default async function ProfilePage() {
       </Alert>
     );
   }
-
+  
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6">
       <header className="space-y-1.5">

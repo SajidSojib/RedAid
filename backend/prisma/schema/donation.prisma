@@ -22,7 +22,8 @@ model DonationRequest {
   union     Union?            @relation(fields: [unionId], references: [id])
   matches   DonationMatch[]
   donations DonationHistory[]
-
+  bankRequest BankRequest[]
+  
   @@index([status, upazilaId, unionId])
   @@index([requesterId])
   @@map("donation-requests")

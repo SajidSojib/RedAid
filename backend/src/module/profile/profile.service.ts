@@ -3,6 +3,7 @@ import { ApiError } from "../../utils/apiError";
 import { BloodType, VerificationStatus } from "../../../generated/prisma/enums";
 import { validateServiceAreas } from "../../utils/validateServiceAreas";
 import { validateCoordinates } from "../../utils/validateCordinates";
+import { getEligibility } from "../../utils/eligiblity";
 
 type ServiceAreaInput = {
   upazilaId: string;
@@ -129,16 +130,39 @@ const updateMyProfile = async (
         payload.bloodType !== undefined &&
         payload.bloodType !== current.bloodType;
 
+      if (
+        payload.bloodType !== undefined &&
+        payload.bloodType !== current.bloodType
+      ) {
+        throw new ApiError(
+          403,
+          "Blood type can't be changed after a confirmed donation. Please contact an admin.",
+        );
+      }
+
       const dateChanged =
         lastDonationDate !== undefined &&
         (lastDonationDate?.getTime() ?? null) !==
           (current.lastDonationDate?.getTime() ?? null);
 
-      if (bloodTypeChanged || dateChanged) {
-        throw new ApiError(
-          403,
-          "Blood type and last donation date can't be changed after a confirmed donation. Please contact Help Center.",
-        );
+      if (dateChanged) {
+        if (!getEligibility(current.lastDonationDate).eligible) {
+          throw new ApiError(
+            403,
+            "You donated recently, so your last donation date can't be changed yet.",
+          );
+        }
+
+        if (
+          lastDonationDate === null ||
+          (current.lastDonationDate &&
+            lastDonationDate < current.lastDonationDate)
+        ) {
+          throw new ApiError(
+            400,
+            "The date can't be earlier than your last recorded donation",
+          );
+        }
       }
     }
 

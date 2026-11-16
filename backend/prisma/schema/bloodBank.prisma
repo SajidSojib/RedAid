@@ -46,11 +46,15 @@ model BankRequest {
   note           String?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
+  donationRequestId String?
 
   requester User      @relation(fields: [requesterId], references: [id], onDelete: Cascade)
   bank      BloodBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  donationRequest DonationRequest? @relation(fields: [donationRequestId], references: [id], onDelete: SetNull)
+
 
   @@index([bankId, status])
+  @@index([requesterId, status])
   @@index([requesterId])
   @@map("bank-requests")
 }
@@ -67,4 +71,6 @@ enum BankRequestStatus {
   REJECTED
   FULFILLED
   CANCELLED
+  WITHDRAWN
+  NO_SHOW
 }

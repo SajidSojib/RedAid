@@ -37,10 +37,16 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase() || "U";
 
+const isEligible = (last: string | null) =>
+  !last || Date.now() - new Date(last).getTime() >= 90 * 86_400_000;
+
 export function ProfileForm({ profile }: { profile: Profile }) {
   const upload = useImageUpload();
   // After a confirmed donation the system owns these two fields
-  const locked = profile.donationCount > 0;
+  const hasDonated = profile.donationCount > 0;
+  const eligible = isEligible(profile?.lastDonationDate);
+  const bloodTypeLocked = hasDonated;
+  const dateLocked = hasDonated && !eligible;
 
   const form = useForm({
     defaultValues: {
@@ -78,9 +84,11 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           phone: value.phone.trim(),
           ...(imageUrl && { image: imageUrl }),
           // locked fields are not sent, so the backend never rejects the save
-          ...(!locked && {
-            bloodType: value.bloodType || undefined,
-            lastDonationDate: value.lastDonationDate || null,
+          ...(!bloodTypeLocked && { bloodType: value.bloodType || undefined }),
+          ...(!dateLocked && {
+            // after a confirmed donation the date can't be cleared, only moved forward
+            lastDonationDate:
+              value.lastDonationDate || (hasDonated ? undefined : null),
           }),
         });
 
@@ -144,7 +152,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           </form.Field>
         </div>
 
-        {locked ? (
+        {bloodTypeLocked && dateLocked ? (
+          // Locked: your original box
           <div className="grid gap-3 rounded-lg border border-dashed bg-muted/30 p-4 text-sm sm:grid-cols-2">
             <div>
               <p className="text-xs text-muted-foreground">Blood type</p>
@@ -174,21 +183,47 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             </p>
           </div>
         ) : (
-          <>
-            <form.Field name="bloodType">
-              {(field) => <BloodTypePicker field={field} label="Blood type" />}
-            </form.Field>
+          <div className="grid gap-5 rounded-lg border border-dashed bg-muted/30 p-4 text-sm sm:grid-cols-2">
+            {bloodTypeLocked ? (
+              <div>
+                <p className="text-xs text-muted-foreground">Blood type</p>
+                <p className="font-semibold">
+                  {profile.bloodType ? bloodLabel(profile.bloodType) : "—"}
+                </p>
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Lock className="size-3" />
+                  Managed by RedAid.
+                </p>
+              </div>
+            ) : (
+              <form.Field name="bloodType">
+                {(field) => (
+                  <BloodTypePicker field={field} label="Blood type" />
+                )}
+              </form.Field>
+            )}
+
             <form.Field name="lastDonationDate">
               {(field) => (
                 <InputField
                   field={field}
                   label="Last donation date (optional)"
                   type="date"
-                  description="Leave empty if you have never donated. It decides when you are eligible."
+                  min={
+                    hasDonated
+                      ? profile.lastDonationDate?.slice(0, 10)
+                      : undefined
+                  }
+                  max={new Date().toISOString().slice(0, 10)}
+                  description={
+                    hasDonated
+                      ? "Donated elsewhere since?"
+                      : "Leave empty if you have never donated."
+                  }
                 />
               )}
             </form.Field>
-          </>
+          </div>
         )}
       </FieldGroup>
 

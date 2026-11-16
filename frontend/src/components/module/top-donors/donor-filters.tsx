@@ -22,7 +22,7 @@ type Props = {
 
 const ALL = "all";
 
-function AreaSelect({
+export function AreaSelect({
   label,
   allLabel,
   value,

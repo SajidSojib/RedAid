@@ -16,6 +16,7 @@ import { donationRouter } from "./module/donation/donation.route";
 import { leaderboardRouter } from "./module/leaderboard/leaderboard.route";
 import { bankRouter } from "./module/bank/bank.route";
 import { inventoryRouter } from "./module/inventory/inventory.route";
+import { bankRequestRouter } from "./module/bank-request/bank-request.route";
 
 const app: Application = express();
 
@@ -43,6 +44,7 @@ app.use("/api/donations", donationRouter);
 app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/banks", bankRouter);
 app.use("/api/inventory", inventoryRouter);
+app.use("/api/bank-requests", bankRequestRouter);
 
 //* error handler
 app.use(notFound);

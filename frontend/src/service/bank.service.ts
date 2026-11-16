@@ -60,7 +60,12 @@ export type PublicBank = {
     id: string;
     name: string;
     bn_name: string;
-    district: { id: string; name: string; bn_name: string };
+    district: {
+      id: string;
+      name: string;
+      bn_name: string;
+      division: { id: string; name: string; bn_name: string };
+    };
   };
   inventory: { bloodType: string; unitsAvailable: number; updatedAt: string }[];
 };
