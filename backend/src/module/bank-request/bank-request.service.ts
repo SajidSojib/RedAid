@@ -10,6 +10,7 @@ import {
 import { BloodLabel } from "../../types/constant/bloodLabel";
 import { parsePagination } from "../../utils/parsePagination";
 import { Prisma } from "../../../generated/prisma/client";
+import { closeRequestAsCompleted } from "../request/request.service";
 
 export const MAX_UNITS_PER_BANK_REQUEST = 15;
 export const MAX_ACTIVE_BANK_REQUESTS = 3;
@@ -32,6 +33,32 @@ const ACTIVE: BankRequestStatus[] = [
   BankRequestStatus.PENDING,
   BankRequestStatus.APPROVED,
 ];
+
+const OPEN_DONOR_STATUSES: RequestStatus[] = [
+  RequestStatus.OPEN,
+  RequestStatus.FULFILLED,
+];
+
+type LinkedState = {
+  status: RequestStatus;
+  unitsNeeded: number;
+  unitsAccepted: number;
+} | null;
+
+// Bags the bank must really give. A linked request only needs what donors haven't covered.
+const unitsFor = (r: {
+  status: BankRequestStatus;
+  unitsRequested: number;
+  donationRequest: LinkedState;
+}) => {
+  if (!r.donationRequest || !ACTIVE_BANK_STATUSES.includes(r.status)) {
+    return r.unitsRequested; // no link, or finished: the stored number
+  }
+  const d = r.donationRequest;
+  return OPEN_DONOR_STATUSES.includes(d.status)
+    ? Math.max(0, d.unitsNeeded - d.unitsAccepted)
+    : 0; // the donor request is already closed, so nothing more is needed
+};
 
 type Tx = Prisma.TransactionClient;
 
@@ -127,13 +154,27 @@ const createBankRequest = async (
         where: {
           id: payload.donationRequestId,
           requesterId,
-          status: { in: [RequestStatus.OPEN, RequestStatus.FULFILLED] },
+          status: { in: OPEN_DONOR_STATUSES },
         },
-        select: { id: true },
+        select: { bloodType: true, unitsNeeded: true, unitsAccepted: true },
       });
 
       if (!linked) {
         throw new ApiError(400, "That request can't be linked");
+      }
+
+      const remaining = linked.unitsNeeded - linked.unitsAccepted;
+      if (remaining < 1) {
+        throw new ApiError(
+          409,
+          "Donors already cover every bag of that request",
+        );
+      }
+      if (linked.bloodType !== bloodType || unitsRequested !== remaining) {
+        throw new ApiError(
+          400,
+          "A linked request must use the same blood type and the bags still needed",
+        );
       }
     }
 
@@ -237,7 +278,15 @@ const getMyBankRequests = async (
       take: limit,
       include: {
         bank: { select: { id: true, name: true, phone: true, address: true } },
-        donationRequest: { select: { id: true, hospitalName: true } },
+        donationRequest: {
+          select: {
+            id: true,
+            hospitalName: true,
+            status: true,
+            unitsNeeded: true,
+            unitsAccepted: true,
+          },
+        },
       },
     }),
     prisma.bankRequest.count({ where }),
@@ -247,7 +296,7 @@ const getMyBankRequests = async (
   ]);
 
   return {
-    requests,
+    requests: requests.map((r) => ({ ...r, unitsRemaining: unitsFor(r) })),
     activeRequests: { used: activeCount, limit: MAX_ACTIVE_BANK_REQUESTS },
     pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
   };
@@ -265,6 +314,15 @@ const findOwned = async (tx: Tx, ownerId: string, id: string) => {
       bloodType: true,
       unitsRequested: true,
       bank: { select: { name: true } },
+      donationRequest: {
+        select: {
+          id: true,
+          bloodType: true,
+          status: true,
+          unitsNeeded: true,
+          unitsAccepted: true,
+        },
+      },
     },
   });
   if (!request) throw new ApiError(404, "Bank request not found");
@@ -321,8 +379,9 @@ const approveBankRequest = (ownerId: string, id: string) =>
       throw new ApiError(409, "Only a pending request can be approved");
     }
 
+    const units = unitsFor(request);
     const stock = await stockOf(tx, request.bankId, request.bloodType);
-    if (stock < request.unitsRequested) {
+    if (stock < units) {
       throw new ApiError(
         409,
         `You only have ${stock} bag${stock === 1 ? "" : "s"} of that type. Update your inventory first.`,
@@ -409,17 +468,41 @@ const completeBankRequest = (ownerId: string, id: string) =>
 
     await move(tx, id, BankRequestStatus.APPROVED, BankRequestStatus.FULFILLED);
 
-    // Guarded: stock can't go below zero
-    const deducted = await tx.bloodInventory.updateMany({
-      where: {
-        bankId: request.bankId,
-        bloodType: request.bloodType,
-        unitsAvailable: { gte: request.unitsRequested },
-      },
-      data: { unitsAvailable: { decrement: request.unitsRequested } },
+    // Only what donors haven't covered is given and deducted
+    const units = unitsFor(request);
+
+    if (units > 0) {
+      const deducted = await tx.bloodInventory.updateMany({
+        where: {
+          bankId: request.bankId,
+          bloodType: request.bloodType,
+          unitsAvailable: { gte: units },
+        },
+        data: { unitsAvailable: { decrement: units } },
+      });
+      if (deducted.count === 0) {
+        throw new ApiError(
+          409,
+          "Your stock is lower than the bags needed. Update your inventory first.",
+        );
+      }
+    }
+
+    // Keep a record of what was really given
+    await tx.bankRequest.update({
+      where: { id },
+      data: { unitsRequested: units },
     });
-    if (deducted.count === 0) {
-      throw new ApiError(409, "Your stock is lower than the requested bags. Update your inventory first.");
+
+    // The bank covered the rest, so the donor request is done
+    if (
+      request.donationRequest &&
+      OPEN_DONOR_STATUSES.includes(request.donationRequest.status)
+    ) {
+      await closeRequestAsCompleted(tx, {
+        id: request.donationRequest.id,
+        bloodType: request.donationRequest.bloodType,
+      });
     }
 
     await notifyRequester(
@@ -518,7 +601,28 @@ const getIncomingBankRequests = async (
         requester: {
           select: { id: true, name: true, phone: true, image: true },
         },
-        donationRequest: { select: { id: true, hospitalName: true } },
+        donationRequest: {
+          select: {
+            id: true,
+            bloodType: true,
+            unitsNeeded: true,
+            unitsAccepted: true,
+            urgency: true,
+            status: true,
+            hospitalName: true,
+            patientName: true,
+            contactPhone: true,
+            note: true,
+            createdAt: true,
+            upazila: {
+              select: {
+                name: true,
+                district: { select: { name: true } },
+              },
+            },
+            union: { select: { name: true } },
+          },
+        },
       },
     }),
     prisma.bankRequest.count({ where }),
@@ -538,6 +642,7 @@ const getIncomingBankRequests = async (
   return {
     requests: rows.map((r) => ({
       ...r,
+      unitsRemaining: unitsFor(r),
       stock: stockByType.get(r.bloodType) ?? 0,
     })),
     counts: { pending, approved },

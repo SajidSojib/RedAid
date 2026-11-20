@@ -17,17 +17,34 @@ export type BankRequestStatus =
   | "WITHDRAWN"
   | "NO_SHOW";
 
+export type LinkedRequest = {
+  id: string;
+  bloodType: string;
+  unitsNeeded: number;
+  unitsAccepted: number;
+  urgency: "NORMAL" | "URGENT" | "CRITICAL";
+  status: string;
+  hospitalName: string | null;
+  patientName: string | null;
+  contactPhone: string | null;
+  note: string | null;
+  createdAt: string;
+  upazila: { name: string; district: { name: string } };
+  union: { name: string } | null;
+};
+
 export type IncomingRequest = {
   id: string;
   bloodType: string;
   unitsRequested: number;
+  unitsRemaining: number;
   status: BankRequestStatus;
   note: string | null;
   createdAt: string;
   updatedAt: string;
   stock: number;
   requester: { id: string; name: string; phone: string; image: string | null };
-  donationRequest: { id: string; hospitalName: string | null } | null;
+  donationRequest: LinkedRequest | null;
 };
 
 export type IncomingPayload = {
@@ -46,6 +63,7 @@ export type MyBankRequest = {
   bankId: string;
   bloodType: string;
   unitsRequested: number;
+  unitsRemaining: number;
   status: BankRequestStatus;
   note: string | null;
   createdAt: string;
@@ -64,6 +82,7 @@ export type MyBankRequestsPayload = {
     totalPages: number;
   };
 };
+
 const enc = encodeURIComponent;
 
 // Not cached: the owner acts on these and must see the latest status

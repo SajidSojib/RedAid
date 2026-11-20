@@ -80,11 +80,14 @@ export default async function BloodBanksPage({
         byBank: Object.fromEntries(
           mine.data.requests.map((r) => [r.bankId, r.status]),
         ),
-        openRequests: (donorRequests?.data?.requests ?? []).map((r) => ({
-          id: r.id,
-          bloodType: r.bloodType,
-          hospitalName: r.hospitalName,
-        })),
+        openRequests: (donorRequests?.data?.requests ?? [])
+          .filter((r) => r.unitsNeeded - r.unitsAccepted > 0)
+          .map((r) => ({
+            id: r.id,
+            bloodType: r.bloodType,
+            unitsRemaining: r.unitsNeeded - r.unitsAccepted,
+            hospitalName: r.hospitalName,
+          })),
       }
     : undefined;
   return (

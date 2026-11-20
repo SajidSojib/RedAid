@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock,
   Inbox,
+  Link2,
   MessageSquareQuote,
   Phone,
   ShieldX,
@@ -30,6 +31,7 @@ import {
   type BankRequestStatus,
 } from "@/service/bank-request.service";
 import { IncomingRequestActions } from "@/components/module/bank/bank-requests/incoming-request-actions";
+import { LinkedRequestDialog } from "@/components/module/bank/bank-requests/linked-request-dialog";
 
 export const metadata = { title: "Incoming requests · RedAid" };
 
@@ -212,7 +214,8 @@ export default async function IncomingRequestsPage({
               const ui = STATUS_UI[r.status];
               const Icon = ui.icon;
               const active = r.status === "PENDING" || r.status === "APPROVED";
-              const enough = r.stock >= r.unitsRequested;
+              const units = r.unitsRemaining;
+              const enough = r.stock >= units;
 
               return (
                 <li key={r.id}>
@@ -225,10 +228,13 @@ export default async function IncomingRequestsPage({
 
                         <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-lg font-semibold">
-                              {r.unitsRequested} bag
-                              {r.unitsRequested === 1 ? "" : "s"}
-                            </h2>
+                            {r.donationRequest &&
+                              units !== r.unitsRequested && (
+                                <p className="text-xs text-muted-foreground">
+                                  Requested {r.unitsRequested}. Donors covered{" "}
+                                  {r.unitsRequested - units}.
+                                </p>
+                              )}
                             <Badge
                               variant="outline"
                               className={cn(
@@ -271,13 +277,23 @@ export default async function IncomingRequestsPage({
                         </p>
                       )}
 
-                      {r.donationRequest?.hospitalName && (
-                        <p className="text-xs text-muted-foreground">
-                          For a request at{" "}
-                          <span className="font-medium text-foreground">
-                            {r.donationRequest.hospitalName}
+                      {r.donationRequest && (
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed bg-muted/30 px-3 py-1.5 text-sm">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <Link2 className="size-3.5" />
+                            Linked to a request
+                            {r.donationRequest.hospitalName && (
+                              <>
+                                {" "}
+                                at{" "}
+                                <span className="font-medium text-foreground">
+                                  {r.donationRequest.hospitalName}
+                                </span>
+                              </>
+                            )}
                           </span>
-                        </p>
+                          <LinkedRequestDialog request={r.donationRequest} />
+                        </div>
                       )}
 
                       {r.note && (

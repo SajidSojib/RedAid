@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { HeartHandshake, Loader, Minus, Plus } from "lucide-react";
+import { HeartHandshake, Link2, Loader, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,7 @@ type Stock = { bloodType: string; unitsAvailable: number };
 export type OpenRequest = {
   id: string;
   bloodType: string;
+  unitsRemaining: number;
   hospitalName: string | null;
 };
 
@@ -54,27 +55,35 @@ export function RequestBloodDialog({
     "";
 
   const [open, setOpen] = useState(false);
-  const [bloodType, setBloodType] = useState(first);
-  const [units, setUnits] = useState(1);
+  const [pickedType, setPickedType] = useState(first);
+  const [pickedUnits, setPickedUnits] = useState(1);
   const [note, setNote] = useState("");
   const [linkId, setLinkId] = useState(NONE);
   const [pending, startTransition] = useTransition();
 
+  // A linked request decides the blood type and the bags
+  const linked = openRequests.find((r) => r.id === linkId);
+  const locked = Boolean(linked);
+  const bloodType = linked?.bloodType ?? pickedType;
+  const units = linked?.unitsRemaining ?? pickedUnits;
+
   const stock =
     inventory.find((i) => i.bloodType === bloodType)?.unitsAvailable ?? 0;
   const max = Math.min(stock, 15);
+  const notEnough = units > stock;
 
   const linkItems = [
     { value: NONE, label: "Don't link" },
     ...openRequests.map((r) => ({
       value: r.id,
-      label: `${bloodLabel(r.bloodType)} · ${r.hospitalName ?? "No hospital"}`,
+      label: `${bloodLabel(r.bloodType)} · ${r.unitsRemaining} bag${r.unitsRemaining === 1 ? "" : "s"} still needed · ${r.hospitalName ?? "No hospital"}`,
     })),
   ];
 
   const pick = (type: string) => {
-    setBloodType(type);
-    setUnits(1); // the new type may have less stock
+    if (locked) return;
+    setPickedType(type);
+    setPickedUnits(1); // the new type may have less stock
   };
 
   const submit = () => {
@@ -84,7 +93,7 @@ export function RequestBloodDialog({
         bloodType,
         unitsRequested: units,
         note: note.trim() || null,
-        donationRequestId: linkId === NONE ? null : linkId,
+        donationRequestId: linked ? linked.id : null,
       });
 
       if (error) {
@@ -93,7 +102,7 @@ export function RequestBloodDialog({
       }
       setOpen(false);
       setNote("");
-      setUnits(1);
+      setPickedUnits(1);
       setLinkId(NONE);
       toast.success("Request sent. The bank will contact you.");
     });
@@ -123,60 +132,6 @@ export function RequestBloodDialog({
         </DialogHeader>
 
         <div className="space-y-5">
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Blood type</p>
-            <div className="grid grid-cols-4 gap-2">
-              {inventory.map(({ bloodType: type, unitsAvailable }) => (
-                <button
-                  key={type}
-                  type="button"
-                  disabled={unitsAvailable === 0}
-                  onClick={() => pick(type)}
-                  className={cn(
-                    "h-11 rounded-lg border text-base font-bold transition-all disabled:cursor-not-allowed disabled:border-dashed disabled:text-muted-foreground/40",
-                    bloodType === type
-                      ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/30"
-                      : "enabled:hover:border-primary/50 enabled:hover:text-primary",
-                  )}
-                >
-                  {bloodLabel(type)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Bags needed</p>
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label="Decrease bags"
-                disabled={units <= 1}
-                onClick={() => setUnits(units - 1)}
-              >
-                <Minus className="size-4" />
-              </Button>
-              <span className="w-10 text-center text-lg font-semibold tabular-nums">
-                {units}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label="Increase bags"
-                disabled={units >= max}
-                onClick={() => setUnits(units + 1)}
-              >
-                <Plus className="size-4" />
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                {stock} in stock
-              </span>
-            </div>
-          </div>
-
           {openRequests.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium">
@@ -201,8 +156,78 @@ export function RequestBloodDialog({
                   ))}
                 </SelectContent>
               </Select>
+              {locked && (
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Link2 className="size-3" />
+                  Blood type and bags follow your request. The bank also sees
+                  its details, including the patient and contact number.
+                </p>
+              )}
             </div>
           )}
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Blood type</p>
+            <div className="grid grid-cols-4 gap-2">
+              {inventory.map(({ bloodType: type, unitsAvailable }) => (
+                <button
+                  key={type}
+                  type="button"
+                  disabled={unitsAvailable === 0 && bloodType !== type}
+                  onClick={() => pick(type)}
+                  className={cn(
+                    "h-11 rounded-lg border text-base font-bold transition-all disabled:cursor-not-allowed disabled:border-dashed disabled:text-muted-foreground/40",
+                    bloodType === type
+                      ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                      : "enabled:hover:border-primary/50 enabled:hover:text-primary",
+                    locked && "cursor-not-allowed",
+                    locked && bloodType !== type && "opacity-40",
+                  )}
+                >
+                  {bloodLabel(type)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Bags needed</p>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Decrease bags"
+                disabled={locked || units <= 1}
+                onClick={() => setPickedUnits(units - 1)}
+              >
+                <Minus className="size-4" />
+              </Button>
+              <span className="w-10 text-center text-lg font-semibold tabular-nums">
+                {units}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Increase bags"
+                disabled={locked || units >= max}
+                onClick={() => setPickedUnits(units + 1)}
+              >
+                <Plus className="size-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {stock} in stock
+              </span>
+            </div>
+            {notEnough && (
+              <p className="text-xs text-destructive">
+                This bank has {stock} bag{stock === 1 ? "" : "s"} of{" "}
+                {bloodLabel(bloodType)}, but your request needs {units}. Try
+                another bank.
+              </p>
+            )}
+          </div>
 
           <div className="space-y-2">
             <p className="text-sm font-medium">
@@ -222,7 +247,10 @@ export function RequestBloodDialog({
         </div>
 
         <DialogFooter>
-          <Button onClick={submit} disabled={pending || !bloodType}>
+          <Button
+            onClick={submit}
+            disabled={pending || !bloodType || notEnough}
+          >
             {pending && <Loader className="animate-spin" />}
             Send request
           </Button>

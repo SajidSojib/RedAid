@@ -4,10 +4,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getMyRequestDetails } from "@/action/request.action";
 import type { MyRequestDetails } from "@/service/request.service";
 
+type State = {
+  id: string | null; // which request this state belongs to
+  data: MyRequestDetails | null;
+  error: string | null;
+};
+
 export function useRequestDetails(id: string | null) {
-  const [data, setData] = useState<MyRequestDetails | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<State>({
+    id: null,
+    data: null,
+    error: null,
+  });
   const latest = useRef<string | null>(null);
 
   // Keeps the old data on screen while it reloads, so the dialog doesn't flash
@@ -15,32 +23,31 @@ export function useRequestDetails(id: string | null) {
     if (!id) return;
     latest.current = id;
 
-    const { data: result, error: failure } = await getMyRequestDetails(id);
+    const { data, error } = await getMyRequestDetails(id);
     if (latest.current !== id) return; // another request replaced this one
 
-    if (failure || !result) {
-      setData(null);
-      setError(failure?.message ?? "Couldn't load this request");
-    } else {
-      setData(result);
-      setError(null);
-    }
-    setLoading(false);
+    setState({
+      id,
+      data: data ?? null,
+      error: data ? null : (error?.message ?? "Couldn't load this request"),
+    });
   }, [id]);
 
   useEffect(() => {
-    setData(null);
-    setError(null);
-
     if (!id) {
       latest.current = null;
-      setLoading(false);
       return;
     }
-
-    setLoading(true);
-    void reload();
+    void reload(); // setState happens after the await, not synchronously
   }, [id, reload]);
 
-  return { data, error, loading, reload };
+  // Ignore results that belong to a different request than the one open now
+  const current = state.id === id ? state : null;
+
+  return {
+    data: current?.data ?? null,
+    error: current?.error ?? null,
+    loading: Boolean(id) && !current,
+    reload,
+  };
 }
