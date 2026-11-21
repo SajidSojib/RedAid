@@ -2,6 +2,7 @@ import { Router } from "express";
 import auth from "../../middlewares/auth";
 import { matchesControllers } from "./match.controller";
 import { Role } from "../../../generated/prisma/enums";
+import requireActiveUser from "../../middlewares/requireActiveUser";
 
 const router = Router();
 
@@ -11,18 +12,21 @@ router.get("/my-offers", auth(Role.USER), matchesControllers.getMyOffers);
 router.patch(
   "/:matchId/accept",
   auth(Role.USER),
+  requireActiveUser(),
   matchesControllers.acceptOffer,
 );
 
 router.patch(
   "/:matchId/decline",
   auth(Role.USER),
+  requireActiveUser(),
   matchesControllers.declineOffer,
 );
 
 router.patch(
   "/:matchId/withdraw",
   auth(Role.USER),
+  requireActiveUser(),
   matchesControllers.withdrawOffer,
 );
 
@@ -30,12 +34,14 @@ router.patch(
 router.patch(
   "/:matchId/cancel-no-show",
   auth(Role.USER),
+  requireActiveUser(),
   matchesControllers.cancelNoShow,
 );
 
 router.post(
   "/requests/:requestId/volunteer",
   auth(Role.USER),
+  requireActiveUser(),
   matchesControllers.volunteerForRequest,
 );
 

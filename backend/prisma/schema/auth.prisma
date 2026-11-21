@@ -12,6 +12,9 @@ model User {
   lastDonationDate DateTime?
   phone            String
   donationCount Int @default(0)
+  suspensionReason String?
+  suspendedAt      DateTime?
+  
   sessions         Session[]
   accounts         Account[]
 

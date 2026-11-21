@@ -1,23 +1,36 @@
+
+
 model Report {
-  id             String       @id @default(uuid())
+  id             String         @id @default(uuid())
   reporterId     String
-  reportedUserId String
+  reportedUserId String?
+  reportedBankId String?
+  category       ReportCategory @default(OTHER)
   reason         String
-  status         ReportStatus @default(PENDING)
+  status         ReportStatus   @default(PENDING)
   adminNote      String?
   resolvedAt     DateTime?
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime       @default(now())
 
-  reporter     User @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
-  reportedUser User @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reporter     User       @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User?      @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reportedBank BloodBank? @relation(fields: [reportedBankId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([reportedUserId])
+  @@index([reportedBankId])
+  @@index([reporterId, createdAt])
   @@map("reports")
 }
-
 enum ReportStatus {
   PENDING
   DISMISSED
   ACTION_TAKEN
+}
+enum ReportCategory {
+  FAKE_REQUEST
+  ABUSIVE
+  NO_SHOW
+  WRONG_INFORMATION
+  OTHER
 }

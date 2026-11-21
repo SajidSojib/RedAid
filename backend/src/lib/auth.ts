@@ -59,6 +59,7 @@ export const auth = betterAuth({
         type: "string",
         required: true,
       },
+      suspensionReason: { type: "string", required: false, input: false },
     },
   },
   emailVerification: {

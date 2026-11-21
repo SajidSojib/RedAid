@@ -1,12 +1,13 @@
-import { Router } from "express";
+import { request, response, Router } from "express";
 import auth from "../../middlewares/auth";
 import { Role } from "../../../generated/prisma/enums";
 import { requestControllers } from "./request.controller";
 import optionalAuth from "../../middlewares/optionalAuth";
+import requireActiveUser from "../../middlewares/requireActiveUser";
 
 const router = Router();
 
-router.post("/", auth(Role.USER), requestControllers.createDonationRequest);
+router.post("/", auth(Role.USER), requireActiveUser(), requestControllers.createDonationRequest);
 
 router.get("/", optionalAuth, requestControllers.getAllDonationRequests);
 
@@ -21,6 +22,7 @@ router.get(
 router.patch(
   "/:requestId/complete",
   auth(Role.USER),
+  requireActiveUser(),
   requestControllers.completeMyDonationRequest,
 );
 
@@ -33,12 +35,14 @@ router.get(
 router.patch(
   "/:requestId",
   auth(Role.USER),
+  requireActiveUser(),
   requestControllers.updateMyDonationRequest,
 );
 
 router.patch(
   "/:requestId/cancel",
   auth(Role.USER),
+  requireActiveUser(),
   requestControllers.cancelMyDonationRequest,
 );
 

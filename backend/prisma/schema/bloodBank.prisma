@@ -13,6 +13,9 @@ model BloodBank {
   verifiedAt         DateTime?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
+  suspensionReason String?
+  suspendedAt      DateTime?
+  reports          Report[]
 
   owner     User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   upazila   Upazila           @relation(fields: [upazilaId], references: [id])
@@ -63,6 +66,7 @@ enum VerificationStatus {
   PENDING
   VERIFIED
   REJECTED
+  SUSPENDED
 }
 
 enum BankRequestStatus {
