@@ -31,9 +31,29 @@ const rejectBank = asyncHandler(async (req, res) => {
   new ApiResponse(200, bank, "Blood bank rejected").send(res);
 });
 
+const suspendBank = asyncHandler(async (req: Request, res: Response) => {
+  const bank = await bankServices.suspendBank(
+    req.params.bankId as string,
+    req.body?.note,
+  );
+
+  return new ApiResponse(200, bank, "Blood bank suspended successfully").send(
+    res,
+  );
+});
+
+const reinstateBank = asyncHandler(async (req: Request, res: Response) => {
+  const bank = await bankServices.reinstateBank(req.params.bankId as string);
+
+  return new ApiResponse(200, bank, "Blood bank reinstated successfully").send(
+    res,
+  );
+});
 
 export const bankControllers = {
   getBanks,
   verifyBank,
   rejectBank,
+  suspendBank,
+  reinstateBank,
 };

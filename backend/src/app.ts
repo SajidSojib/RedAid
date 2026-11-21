@@ -18,6 +18,8 @@ import { bankRouter } from "./module/bank/bank.route";
 import { inventoryRouter } from "./module/inventory/inventory.route";
 import { bankRequestRouter } from "./module/bank-request/bank-request.route";
 import { overviewRouter } from "./module/overview/overview.route";
+import { reportRouter } from "./module/report/report.route";
+import { usersRouter } from "./module/user/user.route";
 
 const app: Application = express();
 
@@ -47,6 +49,8 @@ app.use("/api/banks", bankRouter);
 app.use("/api/inventory", inventoryRouter);
 app.use("/api/bank-requests", bankRequestRouter);
 app.use("/api/overview", overviewRouter);
+app.use("/api/reports", reportRouter);
+app.use("/api/users", usersRouter);
 
 //* error handler
 app.use(notFound);

@@ -18,9 +18,6 @@ const auth = (...roles: Role[]) => {
       if (!session.user.emailVerified) {
         throw new ApiError(403, "Please verify your email address");
       }
-      if (session.user.status !== UserStatus.ACTIVE) {
-        throw new ApiError(403, "This account is not active");
-      }
       if (roles.length && !roles.includes(session.user.role as Role)) {
         throw new ApiError(403, "You are not authorized");
       }

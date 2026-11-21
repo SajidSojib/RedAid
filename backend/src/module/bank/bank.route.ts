@@ -20,4 +20,11 @@ router.patch(
   bankControllers.rejectBank,
 );
 
+router.patch("/:bankId/suspend", auth(Role.ADMIN), bankControllers.suspendBank);
+router.patch(
+  "/:bankId/reinstate",
+  auth(Role.ADMIN),
+  bankControllers.reinstateBank,
+);
+
 export const bankRouter: Router = router;

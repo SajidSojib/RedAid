@@ -319,7 +319,7 @@ type FeedRow = {
 };
 
 type ViewerContext = {
-  me: { bloodType: BloodType | null } | null;
+  me: { bloodType: BloodType | null, status: UserStatus } | null;
   eligibility: ReturnType<typeof getEligibility>;
   hasActiveCommitment: boolean;
 };
@@ -328,7 +328,7 @@ const getViewerContext = async (userId: string): Promise<ViewerContext> => {
   const [me, activeCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { bloodType: true, lastDonationDate: true },
+      select: { bloodType: true, status: true, lastDonationDate: true },
     }),
     prisma.donationMatch.count({
       where: { donorId: userId, status: MatchStatus.ACCEPTED },
@@ -363,7 +363,9 @@ const computeViewerState = (
   let blockedReason: string | null = null;
 
   if (!isOwner && !alreadyAccepted) {
-    if (matchStatus === MatchStatus.WITHDRAWN) {
+    if (me?.status === UserStatus.SUSPENDED) {
+      blockedReason = "Your account is suspended";
+    } else if (matchStatus === MatchStatus.WITHDRAWN) {
       blockedReason =
         "You withdrew from this request earlier, so you can't accept it again";
     } else if (matchStatus === MatchStatus.NO_SHOW) {
@@ -686,6 +688,7 @@ const getAllDonationRequests = async (
 
   const where: Prisma.DonationRequestWhereInput = {
     status: RequestStatus.OPEN,
+    requester: { status: UserStatus.ACTIVE },
     ...buildWhere(filters),
   };
 
