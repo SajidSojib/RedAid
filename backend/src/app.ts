@@ -17,6 +17,7 @@ import { leaderboardRouter } from "./module/leaderboard/leaderboard.route";
 import { bankRouter } from "./module/bank/bank.route";
 import { inventoryRouter } from "./module/inventory/inventory.route";
 import { bankRequestRouter } from "./module/bank-request/bank-request.route";
+import { overviewRouter } from "./module/overview/overview.route";
 
 const app: Application = express();
 
@@ -45,6 +46,7 @@ app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/banks", bankRouter);
 app.use("/api/inventory", inventoryRouter);
 app.use("/api/bank-requests", bankRequestRouter);
+app.use("/api/overview", overviewRouter);
 
 //* error handler
 app.use(notFound);

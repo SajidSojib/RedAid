@@ -5,6 +5,7 @@ import {
   Droplet,
   Flag,
   Inbox,
+  Layout,
   Package,
   ShieldCheck,
   UserRound,
@@ -22,4 +23,5 @@ export const DASHBOARD_ICONS: Record<IconKey, LucideIcon> = {
   shield: ShieldCheck,
   flag: Flag,
   users: Users,
+  layout: Layout
 };

@@ -9,7 +9,9 @@ export type IconKey =
   | "building"
   | "shield"
   | "flag"
-  | "users";
+  | "users"
+  | "layout"
+  ;
 
 
 export type DashboardRoute = {
@@ -49,6 +51,12 @@ export const DASHBOARD_ROUTES: Record<UserRole, DashboardRoute[]> = {
     },
   ],
   BANK: [
+    {
+      title: "Overview",
+      description: "Requests, stock and activity at a glance",
+      url: "/dashboard/overview",
+      icon: "layout",
+    },
     {
       title: "Inventory",
       description: "Update your blood stock by blood type",
