@@ -1,17 +1,27 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { bankServices, InventoryUpdateInput, UpdateBankInput } from "@/service/bank.service";
+import {
+  bankServices,
+  InventoryUpdateInput,
+  UpdateBankInput,
+} from "@/service/bank.service";
+
+const expire = () => {
+  updateTag("blood-banks");
+  updateTag("my-bank-requests");
+  updateTag("notifications");
+};
 
 export const verifyBank = async (id: string) => {
   const res = await bankServices.verifyBank(id);
-  if (!res.error) updateTag("blood-banks");
+  if (!res.error) expire();
   return res;
 };
 
 export const rejectBank = async (id: string, note: string) => {
   const res = await bankServices.rejectBank(id, note);
-  if (!res.error) updateTag("blood-banks");
+  if (!res.error) expire();
   return res;
 };
 
@@ -27,5 +37,17 @@ export const updateMyBank = async (input: UpdateBankInput) => {
 export const updateMyInventory = async (items: InventoryUpdateInput) => {
   const res = await bankServices.updateMyInventory(items);
   if (!res.error) updateTag("blood-banks"); // the public list shows stock
+  return res;
+};
+
+export const suspendBank = async (id: string, note: string) => {
+  const res = await bankServices.suspendBank(id, note);
+  if (!res.error) expire();
+  return res;
+};
+
+export const reinstateBank = async (id: string) => {
+  const res = await bankServices.reinstateBank(id);
+  if (!res.error) expire();
   return res;
 };

@@ -46,7 +46,7 @@ export async function proxy(request: NextRequest) {
 
   const user = await getSessionUser(request);
 
-  if (!user || (user.status && user.status !== "ACTIVE")) {
+  if (!user) {
     return toLogin(request);
   }
 

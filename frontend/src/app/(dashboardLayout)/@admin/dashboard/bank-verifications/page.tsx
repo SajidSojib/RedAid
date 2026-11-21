@@ -4,8 +4,10 @@ import {
   Building2,
   CheckCircle2,
   Clock,
+  Flag,
   MapPin,
   Phone,
+  ShieldOff,
   ShieldX,
   User,
   type LucideIcon,
@@ -28,8 +30,9 @@ import {
   type AdminBanksPayload,
   type VerificationStatus,
 } from "@/service/bank.service";
-import { BankDetailsDialog } from "@/components/module/admin/bank-verification/bank-details-dialog";
 import { BankReviewActions } from "@/components/module/admin/bank-verification/bank-review-actions";
+import { ReportsDialog } from "@/components/module/admin/users/reports-dialog";
+import { BankDetailsDialog } from "@/components/module/admin/bank-verification/bank-details-dialog";
 
 export const metadata = { title: "Bank verifications · RedAid" };
 
@@ -39,9 +42,9 @@ const TABS: { value: VerificationStatus; label: string }[] = [
   { value: "PENDING", label: "Pending" },
   { value: "VERIFIED", label: "Verified" },
   { value: "REJECTED", label: "Rejected" },
+  { value: "SUSPENDED", label: "Suspended" },
 ];
 
-// One color per status, with dark mode handled (same approach as the badge cards)
 const STATUS_UI: Record<
   VerificationStatus,
   { chip: string; glow: string; icon: LucideIcon }
@@ -60,6 +63,11 @@ const STATUS_UI: Record<
     chip: "bg-destructive/10 text-destructive ring-destructive/30",
     glow: "hover:shadow-destructive/20",
     icon: ShieldX,
+  },
+  SUSPENDED: {
+    chip: "bg-destructive/10 text-destructive ring-destructive/30",
+    glow: "hover:shadow-destructive/20",
+    icon: ShieldOff,
   },
 };
 
@@ -99,12 +107,11 @@ export default async function BankVerificationsPage({
           Bank verifications
         </h1>
         <p className="max-w-xl text-sm text-muted-foreground">
-          Review new registrations, and revoke a bank that should no longer be
-          public.
+          Review new registrations, and suspend or revoke a bank that should no
+          longer be public.
         </p>
       </header>
 
-      {/* Hero summary */}
       <section className="relative overflow-hidden rounded-2xl border bg-card p-6 sm:p-8">
         <div
           aria-hidden
@@ -128,8 +135,8 @@ export default async function BankVerificationsPage({
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
-            {(["VERIFIED", "REJECTED"] as const).map((s) => {
+          <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1">
+            {(["VERIFIED", "REJECTED", "SUSPENDED"] as const).map((s) => {
               const ui = STATUS_UI[s];
               const Icon = ui.icon;
               return (
@@ -158,10 +165,9 @@ export default async function BankVerificationsPage({
         </div>
       </section>
 
-      {/* Status tabs */}
       <nav
         aria-label="Status"
-        className="flex gap-1 rounded-lg border bg-muted/50 p-1"
+        className="flex gap-1 overflow-x-auto rounded-lg border bg-muted/50 p-1"
       >
         {TABS.map((tab) => (
           <Link
@@ -169,7 +175,7 @@ export default async function BankVerificationsPage({
             href={`/dashboard/bank-verifications?status=${tab.value}`}
             aria-current={status === tab.value ? "page" : undefined}
             className={cn(
-              "flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+              "flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all",
               status === tab.value
                 ? "bg-background shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
@@ -190,7 +196,6 @@ export default async function BankVerificationsPage({
         ))}
       </nav>
 
-      {/* List */}
       <section className="space-y-3">
         {banks.length === 0 ? (
           <Empty className="border border-dashed">
@@ -233,6 +238,7 @@ export default async function BankVerificationsPage({
                           </div>
 
                           <div className="min-w-0 flex-1 space-y-1">
+                            {/* title row: name, status badge, pending-reports badge */}
                             <div className="flex flex-wrap items-center gap-2">
                               <h2 className="truncate text-lg font-semibold">
                                 {bank.name}
@@ -247,6 +253,15 @@ export default async function BankVerificationsPage({
                                 <Icon className="size-3" />
                                 {bank.verificationStatus.toLowerCase()}
                               </Badge>
+                              {bank.reports.pending > 0 && (
+                                <Badge
+                                  variant="outline"
+                                  className="gap-1 border-transparent bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/30 dark:text-amber-400"
+                                >
+                                  <Flag className="size-3" />
+                                  {bank.reports.pending} pending
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-sm text-muted-foreground">
                               License{" "}
@@ -276,25 +291,46 @@ export default async function BankVerificationsPage({
                           </span>
                         </div>
 
-                        {bank.verificationNote && (
-                          <p className="rounded-lg border bg-muted/40 p-3 text-sm">
-                            <span className="text-muted-foreground">
-                              Note:{" "}
-                            </span>
-                            {bank.verificationNote}
-                          </p>
-                        )}
+                        {bank.verificationNote &&
+                          bank.verificationStatus === "REJECTED" && (
+                            <p className="rounded-lg border bg-muted/40 p-3 text-sm">
+                              <span className="text-muted-foreground">
+                                Note:{" "}
+                              </span>
+                              {bank.verificationNote}
+                            </p>
+                          )}
+
+                        {bank.verificationStatus === "SUSPENDED" &&
+                          bank.suspensionReason && (
+                            <p className="rounded-lg border bg-muted/40 p-3 text-sm">
+                              <span className="text-muted-foreground">
+                                Suspended
+                                {bank.suspendedAt
+                                  ? ` ${timeAgo(bank.suspendedAt)}`
+                                  : ""}
+                                :{" "}
+                              </span>
+                              {bank.suspensionReason}
+                            </p>
+                          )}
                       </div>
 
                       <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/30 px-5 py-3">
-                        <BankDetailsDialog bank={bank} />
-                        <div className="flex gap-2">
-                          <BankReviewActions
-                            bankId={bank.id}
-                            bankName={bank.name}
-                            status={bank.verificationStatus}
+                        <div className="flex items-center gap-1">
+                          <BankDetailsDialog bank={bank} />
+                          <ReportsDialog
+                            target={{ bankId: bank.id }}
+                            name={bank.name}
+                            pending={bank.reports.pending}
+                            total={bank.reports.total}
                           />
                         </div>
+                        <BankReviewActions
+                          bankId={bank.id}
+                          bankName={bank.name}
+                          status={bank.verificationStatus}
+                        />
                       </div>
                     </Card>
                   </li>

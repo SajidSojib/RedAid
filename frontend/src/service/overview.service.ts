@@ -1,11 +1,13 @@
 import { authedRequest } from "@/lib/server-api";
 import type { BankRequestStatus } from "@/service/bank-request.service";
+import { VerificationStatus } from "./bank.service";
 
 export type BankOverview = {
   bank: {
     name: string;
-    verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
+    verificationStatus: VerificationStatus;
     verificationNote: string | null;
+    suspensionReason: string | null;
   };
   counts: {
     pending: number;

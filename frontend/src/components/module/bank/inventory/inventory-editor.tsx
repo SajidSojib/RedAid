@@ -34,7 +34,13 @@ const level = (units: number) =>
           text: "text-emerald-600 dark:text-emerald-400",
         };
 
-export function InventoryEditor({ initial }: { initial: InventoryItem[] }) {
+export function InventoryEditor({
+  initial,
+  readOnly = false,
+}: {
+  initial: InventoryItem[];
+  readOnly?: boolean;
+}) {
   const toMap = (items: InventoryItem[]) =>
     Object.fromEntries(items.map((i) => [i.bloodType, i.unitsAvailable]));
 
@@ -110,7 +116,7 @@ export function InventoryEditor({ initial }: { initial: InventoryItem[] }) {
                   variant="outline"
                   size="icon"
                   aria-label={`Decrease ${bloodLabel(bloodType)}`}
-                  disabled={units <= 0}
+                  disabled={readOnly || units <= 0}
                   onClick={() => set(bloodType, units - 1)}
                 >
                   <Minus className="size-4" />
@@ -121,6 +127,7 @@ export function InventoryEditor({ initial }: { initial: InventoryItem[] }) {
                   min={0}
                   max={MAX}
                   value={units}
+                  disabled={readOnly}
                   aria-label={`${bloodLabel(bloodType)} units`}
                   onChange={(e) =>
                     set(
@@ -135,7 +142,7 @@ export function InventoryEditor({ initial }: { initial: InventoryItem[] }) {
                   variant="outline"
                   size="icon"
                   aria-label={`Increase ${bloodLabel(bloodType)}`}
-                  disabled={units >= MAX}
+                  disabled={readOnly || units >= MAX}
                   onClick={() => set(bloodType, units + 1)}
                 >
                   <Plus className="size-4" />
@@ -147,7 +154,10 @@ export function InventoryEditor({ initial }: { initial: InventoryItem[] }) {
       </ul>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={save} disabled={pending || changed.length === 0}>
+        <Button
+          onClick={save}
+          disabled={pending || readOnly || changed.length === 0}
+        >
           {pending && <Loader className="animate-spin" />}
           Save changes
           {changed.length > 0 && ` (${changed.length})`}

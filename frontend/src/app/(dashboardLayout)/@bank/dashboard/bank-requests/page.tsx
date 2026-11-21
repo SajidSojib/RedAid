@@ -32,6 +32,7 @@ import {
 } from "@/service/bank-request.service";
 import { IncomingRequestActions } from "@/components/module/bank/bank-requests/incoming-request-actions";
 import { LinkedRequestDialog } from "@/components/module/bank/bank-requests/linked-request-dialog";
+import { ReportDialog } from "@/components/common/report-dialog";
 
 export const metadata = { title: "Incoming requests · RedAid" };
 
@@ -309,11 +310,19 @@ export default async function IncomingRequestsPage({
                         <span className="text-sm text-muted-foreground tabular-nums">
                           In stock: {r.stock}
                         </span>
-                        <IncomingRequestActions
-                          id={r.id}
-                          status={r.status}
-                          enoughStock={enough}
-                        />
+                        <div className="flex items-center gap-2">
+                          {r.status !== "PENDING" && (
+                            <ReportDialog
+                              target={{ userId: r.requester.id }}
+                              name={r.requester.name}
+                            />
+                          )}
+                          <IncomingRequestActions
+                            id={r.id}
+                            status={r.status}
+                            enoughStock={enough}
+                          />
+                        </div>
                       </div>
                     )}
                   </Card>

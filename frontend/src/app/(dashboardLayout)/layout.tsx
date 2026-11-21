@@ -20,7 +20,7 @@ export default async function DashboardLayout({
   const account = session?.user;
 
   // The proxy already blocks these, but a layout doesn't re-run on client-side navigation
-  if (!account || (account.status && account.status !== "ACTIVE")) {
+  if (!account) {
     redirect("/login?next=/dashboard");
   }
 

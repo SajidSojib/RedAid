@@ -10,6 +10,7 @@ import {
 import { timeAgo } from "@/lib/time";
 import { bankServices } from "@/service/bank.service";
 import { InventoryEditor } from "@/components/module/bank/inventory/inventory-editor";
+import { SuspendedNotice } from "@/components/module/bank/bank-profile/suspended-notice";
 
 export const metadata = { title: "Inventory · RedAid" };
 
@@ -49,6 +50,10 @@ export default async function InventoryPage() {
           Keep your blood stock current so requesters know what you have.
         </p>
       </header>
+
+      {bank.verificationStatus === "SUSPENDED" && (
+        <SuspendedNotice reason={null} />
+      )}
 
       {bank.verificationStatus !== "VERIFIED" && (
         <Alert>
@@ -118,7 +123,10 @@ export default async function InventoryPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <InventoryEditor initial={inventory} />
+          <InventoryEditor
+            initial={inventory}
+            readOnly={bank.verificationStatus === "SUSPENDED"}
+          />{" "}
         </CardContent>
       </Card>
     </div>

@@ -28,6 +28,7 @@ import {
 } from "./status-badges";
 import { useRequestDetails } from "./user-request-details";
 import { ConfirmAction } from "@/components/common/confirm-action";
+import { ReportDialog } from "@/components/common/report-dialog";
 
 const initials = (name: string) =>
   name
@@ -217,7 +218,13 @@ export function RequestViewDialog({
                           )}
                         </div>
 
-                        <MatchStatusBadge status={item.status} />
+                        <div className="flex items-center">
+                          <MatchStatusBadge status={item.status} />
+                          <ReportDialog
+                            target={{ userId: item.donor.id }}
+                            name={item.donor.name}
+                          />
+                        </div>
                       </div>
 
                       {item.donor.phone && (

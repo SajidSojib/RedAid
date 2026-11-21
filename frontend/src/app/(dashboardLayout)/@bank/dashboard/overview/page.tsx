@@ -18,6 +18,7 @@ import { timeAgo } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import type { BankRequestStatus } from "@/service/bank-request.service";
 import { overviewServices } from "@/service/overview.service";
+import { SuspendedNotice } from "@/components/module/bank/bank-profile/suspended-notice";
 
 export const metadata = { title: "Overview · RedAid" };
 
@@ -75,6 +76,10 @@ const VERIFICATION = {
   },
   REJECTED: {
     label: "Not approved",
+    chip: "bg-destructive/10 text-destructive ring-destructive/30",
+  },
+  SUSPENDED: {
+    label: "Suspended",
     chip: "bg-destructive/10 text-destructive ring-destructive/30",
   },
 } as const;
@@ -277,32 +282,37 @@ export default async function BankOverviewPage() {
         </Button>
       </header>
 
-      {bank.verificationStatus !== "VERIFIED" && (
-        <Link
-          href="/dashboard/bank-profile"
-          className={cn(
-            "flex items-start gap-3 rounded-2xl border p-4 text-sm transition-colors hover:bg-muted/40 motion-safe:animate-fade-up",
-            bank.verificationStatus === "REJECTED"
-              ? "border-destructive/30 bg-destructive/5"
-              : "border-amber-500/30 bg-amber-500/5",
-          )}
-        >
-          <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <div className="flex-1">
-            <p className="font-semibold">
-              {bank.verificationStatus === "REJECTED"
-                ? "Your bank was not approved"
-                : "Your bank is waiting for review"}
-            </p>
-            <p className="text-muted-foreground">
-              {bank.verificationStatus === "REJECTED"
-                ? `${bank.verificationNote ?? "No reason was given."} Update your details to submit again.`
-                : "Requesters can't see it until an admin verifies it."}
-            </p>
-          </div>
-          <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-        </Link>
+      {bank.verificationStatus === "SUSPENDED" && (
+        <SuspendedNotice reason={bank.suspensionReason} />
       )}
+
+      {bank.verificationStatus !== "VERIFIED" &&
+        bank.verificationStatus !== "SUSPENDED" && (
+          <Link
+            href="/dashboard/bank-profile"
+            className={cn(
+              "flex items-start gap-3 rounded-2xl border p-4 text-sm transition-colors hover:bg-muted/40 motion-safe:animate-fade-up",
+              bank.verificationStatus === "REJECTED"
+                ? "border-destructive/30 bg-destructive/5"
+                : "border-amber-500/30 bg-amber-500/5",
+            )}
+          >
+            <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <div className="flex-1">
+              <p className="font-semibold">
+                {bank.verificationStatus === "REJECTED"
+                  ? "Your bank was not approved"
+                  : "Your bank is waiting for review"}
+              </p>
+              <p className="text-muted-foreground">
+                {bank.verificationStatus === "REJECTED"
+                  ? `${bank.verificationNote ?? "No reason was given."} Update your details to submit again.`
+                  : "Requesters can't see it until an admin verifies it."}
+              </p>
+            </div>
+            <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          </Link>
+        )}
 
       {/* Action card + trend */}
       <div className="grid gap-6 lg:grid-cols-3">

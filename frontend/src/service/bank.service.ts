@@ -1,6 +1,6 @@
 import { authedRequest } from "@/lib/server-api";
 
-export type VerificationStatus = "PENDING" | "VERIFIED" | "REJECTED";
+export type VerificationStatus = "PENDING" | "VERIFIED" | "REJECTED" | "SUSPENDED";
 
 export type AdminBank = {
   id: string;
@@ -13,6 +13,9 @@ export type AdminBank = {
   verificationStatus: VerificationStatus;
   verificationNote: string | null;
   verifiedAt: string | null;
+  suspensionReason: string | null;
+  suspendedAt: string | null;
+  reports: { pending: number; total: number };
   createdAt: string;
   inventory: { bloodType: string; unitsAvailable: number; updatedAt: string }[];
   upazila: {
@@ -89,8 +92,9 @@ export type BankProfile = {
   phone: string;
   licenseNumber: string;
   upazilaId: string;
-  verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
+  verificationStatus: VerificationStatus;
   verificationNote: string | null;
+  suspensionReason: string | null;
   verifiedAt: string | null;
   createdAt: string;
   upazila: {
@@ -119,7 +123,8 @@ export type InventoryPayload = {
   bank: {
     id: string;
     name: string;
-    verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
+    verificationStatus: VerificationStatus;
+    suspensionReason: string | null;
   };
   inventory: InventoryItem[];
 };
@@ -159,4 +164,15 @@ const updateMyInventory = (items: InventoryUpdateInput) =>
     body: { items },
   });
 
-export const bankServices = { getBanks, verifyBank, rejectBank, getMyBank, updateMyBank, getMyInventory, updateMyInventory };
+const suspendBank = (id: string, note: string) =>
+  authedRequest<unknown>(`/banks/${encodeURIComponent(id)}/suspend`, {
+    method: "PATCH",
+    body: { note },
+  });
+
+const reinstateBank = (id: string) =>
+  authedRequest<unknown>(`/banks/${encodeURIComponent(id)}/reinstate`, {
+    method: "PATCH",
+  });
+
+export const bankServices = { getBanks, verifyBank, rejectBank, getMyBank, updateMyBank, getMyInventory, updateMyInventory, suspendBank, reinstateBank };

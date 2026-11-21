@@ -6,6 +6,7 @@ import {
   FileText,
   MapPin,
   Phone,
+  ShieldOff,
   ShieldX,
   type LucideIcon,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { BankProfile, bankServices } from "@/service/bank.service";
 import { BankProfileForm } from "@/components/module/bank/bank-profile/bank-profile-form";
+import { SuspendedNotice } from "@/components/module/bank/bank-profile/suspended-notice";
 
 
 export const metadata = { title: "Bank profile · RedAid" };
@@ -51,6 +53,12 @@ const STATUS: Record<
   REJECTED: {
     icon: ShieldX,
     label: "Not approved",
+    chip: "bg-destructive/10 text-destructive ring-destructive/30",
+    card: "border-destructive/30 bg-destructive/5",
+  },
+  SUSPENDED: {
+    icon: ShieldOff,
+    label: "Suspended",
     chip: "bg-destructive/10 text-destructive ring-destructive/30",
     card: "border-destructive/30 bg-destructive/5",
   },
@@ -130,25 +138,29 @@ export default async function BankProfilePage() {
         )}
       </section>
 
-      {bank.verificationStatus !== "VERIFIED" && (
-        <section className={cn("rounded-2xl border p-5 text-sm", ui.card)}>
-          <p className="font-semibold">
-            {bank.verificationStatus === "PENDING"
-              ? "An admin is checking your details"
-              : "Your bank was not approved"}
-          </p>
-          <p className="mt-1 text-muted-foreground">
-            {bank.verificationStatus === "PENDING"
-              ? "Your bank becomes visible to requesters once it is verified."
-              : "Update your details below and save. Your bank goes back to review automatically."}
-          </p>
-          {bank.verificationStatus === "REJECTED" && (
-            <p className="mt-3 rounded-lg border bg-background/70 p-3">
-              <span className="font-medium">Reason: </span>
-              {bank.verificationNote ?? "No reason was given."}
+      {bank.verificationStatus === "SUSPENDED" ? (
+        <SuspendedNotice reason={bank.suspensionReason} />
+      ) : (
+        bank.verificationStatus !== "VERIFIED" && (
+          <section className={cn("rounded-2xl border p-5 text-sm", ui.card)}>
+            <p className="font-semibold">
+              {bank.verificationStatus === "PENDING"
+                ? "An admin is checking your details"
+                : "Your bank was not approved"}
             </p>
-          )}
-        </section>
+            <p className="mt-1 text-muted-foreground">
+              {bank.verificationStatus === "PENDING"
+                ? "Your bank becomes visible to requesters once it is verified."
+                : "Update your details below and save. Your bank goes back to review automatically."}
+            </p>
+            {bank.verificationStatus === "REJECTED" && (
+              <p className="mt-3 rounded-lg border bg-background/70 p-3">
+                <span className="font-medium">Reason: </span>
+                {bank.verificationNote ?? "No reason was given."}
+              </p>
+            )}
+          </section>
+        )
       )}
 
       <Card>
@@ -157,7 +169,10 @@ export default async function BankProfilePage() {
           <CardDescription>Registered {date(bank.createdAt)}</CardDescription>
         </CardHeader>
         <CardContent>
-          <BankProfileForm bank={bank} />
+          <BankProfileForm
+            bank={bank}
+            readOnly={bank.verificationStatus === "SUSPENDED"}
+          />
         </CardContent>
       </Card>
     </div>

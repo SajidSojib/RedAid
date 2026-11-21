@@ -8,6 +8,7 @@ import { bloodLabel } from "@/lib/blood";
 import { timeAgo } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import type { PublicBank } from "@/service/bank.service";
+import { ReportDialog } from "@/components/common/report-dialog";
 
 const LOW = 5;
 
@@ -74,14 +75,17 @@ function renderAction(
         >
           {here === "APPROVED" ? "Approved. Go collect it" : "Request pending"}
         </span>
-        <Button
-          variant="outline"
-          size="sm"
-          render={<Link href="/dashboard/my-requests?type=bank" />}
-          nativeButton={false}
-        >
-          View
-        </Button>
+        <div className="flex items-center gap-2">
+          <ReportDialog target={{ bankId: bank.id }} name={bank.name} />
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href="/dashboard/my-requests?type=bank" />}
+            nativeButton={false}
+          >
+            View
+          </Button>
+        </div>
       </>
     );
   }
@@ -94,9 +98,13 @@ function renderAction(
             ? "Collect your approved request first"
             : `You have ${myRequests?.limit} active requests`}
         </span>
-        <Button size="sm" variant="outline" disabled>
-          Request blood
-        </Button>
+        <div className="flex items-center gap-2">
+          <ReportDialog target={{ bankId: bank.id }} name={bank.name} />
+
+          <Button size="sm" variant="outline" disabled>
+            Request blood
+          </Button>
+        </div>
       </>
     );
   }
@@ -104,13 +112,13 @@ function renderAction(
   return (
     <>
       <span className="text-sm text-muted-foreground">Need blood?</span>
-      <RequestBloodDialog
-        bankId={bank.id}
-        bankName={bank.name}
-        inventory={bank.inventory}
-        defaultBloodType={bloodType}
-        openRequests={myRequests?.openRequests}
-      />
+        <RequestBloodDialog
+          bankId={bank.id}
+          bankName={bank.name}
+          inventory={bank.inventory}
+          defaultBloodType={bloodType}
+          openRequests={myRequests?.openRequests}
+        />
     </>
   );
 }

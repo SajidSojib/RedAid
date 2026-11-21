@@ -26,7 +26,13 @@ const schema = z.object({
   upazilaId: z.string().min(1, "Choose an upazila"),
 });
 
-export function BankProfileForm({ bank }: { bank: BankProfile }) {
+export function BankProfileForm({
+  bank,
+  readOnly = false,
+}: {
+  bank: BankProfile;
+  readOnly?: boolean;
+}) {
   const form = useForm({
     defaultValues: {
       name: bank.name,
@@ -81,59 +87,61 @@ export function BankProfileForm({ bank }: { bank: BankProfile }) {
       }}
     >
       <FieldGroup className="gap-5">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <form.Field name="name">
-            {(field) => <InputField field={field} label="Blood bank name" />}
-          </form.Field>
-          <form.Field name="licenseNumber">
-            {(field) => <InputField field={field} label="License number" />}
-          </form.Field>
-        </div>
+        <fieldset disabled={readOnly} className="contents">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <form.Field name="name">
+              {(field) => <InputField field={field} label="Blood bank name" />}
+            </form.Field>
 
-        <form.Field name="phone">
-          {(field) => (
-            <InputField
-              field={field}
-              label="Bank contact phone"
-              type="tel"
-              description="Shown publicly on your bank's page."
-            />
-          )}
-        </form.Field>
+            <form.Field name="licenseNumber">
+              {(field) => <InputField field={field} label="License number" />}
+            </form.Field>
+          </div>
 
-        <form.Field name="address">
-          {(field) => (
-            <TextareaField
-              field={field}
-              label="Address"
-              rows={2}
-              maxLength={200}
-            />
-          )}
-        </form.Field>
-
-        <form.Field name="upazilaId">
-          {(field) => (
-            <Field>
-              <FieldLabel>Location</FieldLabel>
-              <p className="flex items-center gap-1.5 text-sm">
-                <MapPin className="size-4 text-primary" />
-                {bank.upazila.name}, {bank.upazila.district.name}
-                <span className="text-muted-foreground">(current)</span>
-              </p>
-              <AreaSelector
-                mode="single"
-                // clearing the selector goes back to the saved upazila
-                onSelect={(area) =>
-                  field.handleChange(area?.upazilaId ?? bank.upazilaId)
-                }
+          <form.Field name="phone">
+            {(field) => (
+              <InputField
+                field={field}
+                label="Bank contact phone"
+                type="tel"
+                description="Shown publicly on your bank's page."
               />
-              <FieldDescription>
-                Only change this if your bank moved.
-              </FieldDescription>
-            </Field>
-          )}
-        </form.Field>
+            )}
+          </form.Field>
+
+          <form.Field name="address">
+            {(field) => (
+              <TextareaField
+                field={field}
+                label="Address"
+                rows={2}
+                maxLength={200}
+              />
+            )}
+          </form.Field>
+
+          <form.Field name="upazilaId">
+            {(field) => (
+              <Field>
+                <FieldLabel>Location</FieldLabel>
+                <p className="flex items-center gap-1.5 text-sm">
+                  <MapPin className="size-4 text-primary" />
+                  {bank.upazila.name}, {bank.upazila.district.name}
+                  <span className="text-muted-foreground">(current)</span>
+                </p>
+                <AreaSelector
+                  mode="single"
+                  onSelect={(area) =>
+                    field.handleChange(area?.upazilaId ?? bank.upazilaId)
+                  }
+                />
+                <FieldDescription>
+                  Only change this if your bank moved.
+                </FieldDescription>
+              </Field>
+            )}
+          </form.Field>
+        </fieldset>
       </FieldGroup>
 
       <form.Subscribe selector={(s) => s.values}>
@@ -159,7 +167,7 @@ export function BankProfileForm({ bank }: { bank: BankProfile }) {
 
       <form.Subscribe selector={(s) => [s.isSubmitting, s.isDirty] as const}>
         {([isSubmitting, isDirty]) => (
-          <Button type="submit" disabled={isSubmitting || !isDirty}>
+          <Button type="submit" disabled={isSubmitting || !isDirty || readOnly}>
             {isSubmitting && <Loader className="animate-spin" />}
             {bank.verificationStatus === "REJECTED"
               ? "Save and resubmit"

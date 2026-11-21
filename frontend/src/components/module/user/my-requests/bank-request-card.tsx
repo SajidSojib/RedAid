@@ -9,6 +9,7 @@ import type {
   MyBankRequest,
 } from "@/service/bank-request.service";
 import { WithdrawBankRequestButton } from "./withdraw-bank-request-button";
+import { ReportDialog } from "@/components/common/report-dialog";
 
 const STATUS: Record<
   BankRequestStatus,
@@ -116,12 +117,20 @@ export function BankRequestCard({ request }: { request: MyBankRequest }) {
 
       <div className="flex items-center justify-between gap-3 border-t bg-muted/30 px-5 py-3">
         <span className="text-sm text-muted-foreground">{ui.hint}</span>
-        {active && (
-          <WithdrawBankRequestButton
-            id={request.id}
-            approved={request.status === "APPROVED"}
-          />
-        )}
+        <div className="flex items-center gap-2">
+          {["APPROVED", "FULFILLED", "NO_SHOW"].includes(request.status) && (
+            <ReportDialog
+              target={{ bankId: request.bank.id }}
+              name={request.bank.name}
+            />
+          )}
+          {active && (
+            <WithdrawBankRequestButton
+              id={request.id}
+              approved={request.status === "APPROVED"}
+            />
+          )}
+        </div>
       </div>
     </Card>
   );
