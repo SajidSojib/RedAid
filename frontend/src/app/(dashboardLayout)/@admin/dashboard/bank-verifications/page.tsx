@@ -172,7 +172,7 @@ export default async function BankVerificationsPage({
         {TABS.map((tab) => (
           <Link
             key={tab.value}
-            href={`/dashboard/bank-verifications?status=${tab.value}`}
+            href={`/dashboard/bank-management?status=${tab.value}`}
             aria-current={status === tab.value ? "page" : undefined}
             className={cn(
               "flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all",
@@ -344,7 +344,7 @@ export default async function BankVerificationsPage({
               total={pagination.total}
               limit={pagination.limit}
               query={new URLSearchParams({ status })}
-              basePath="/dashboard/bank-verifications"
+              basePath="/dashboard/bank-management"
             />
           </>
         )}

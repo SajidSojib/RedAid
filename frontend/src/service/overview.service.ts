@@ -32,7 +32,46 @@ export type BankOverview = {
   }[];
 };
 
-// Not cached: the owner acts on these numbers and expects them to be current
+export type AdminOverview = {
+  counts: {
+    banks: Record<"PENDING" | "VERIFIED" | "REJECTED" | "SUSPENDED", number>;
+    users: { active: number; suspended: number };
+    donations: number;
+    requests: Record<
+      "OPEN" | "FULFILLED" | "COMPLETED" | "CANCELLED" | "EXPIRED",
+      number
+    >;
+    activeBankRequests: number;
+    pendingReports: number;
+  };
+  weekly: {
+    weekStart: string;
+    donations: number;
+    signups: number;
+    requests: number;
+  }[];
+  blood: { bloodType: string; demand: number; supply: number }[];
+  pendingBanks: {
+    id: string;
+    name: string;
+    createdAt: string;
+    upazila: { name: string; district: { name: string } };
+  }[];
+  latestReports: {
+    id: string;
+    category: string;
+    reason: string;
+    createdAt: string;
+    reporter: { name: string };
+    reportedUser: { id: string; name: string } | null;
+    reportedBank: { id: string; name: string } | null;
+  }[];
+};
+
+// Not cached
+const getAdminOverview = () => authedRequest<AdminOverview>("/overview/admin");
+
+// Not cached
 const getBankOverview = () => authedRequest<BankOverview>("/overview/bank");
 
-export const overviewServices = { getBankOverview };
+export const overviewServices = { getBankOverview, getAdminOverview };

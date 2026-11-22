@@ -2,6 +2,8 @@ import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../utils/apiError";
 import {
   BankRequestStatus,
+  BloodType,
+  ReportStatus,
   RequestStatus,
   Role,
   UserStatus,
@@ -158,29 +160,61 @@ const getBankOverview = async (ownerId: string) => {
 const getAdminOverview = async () => {
   const [
     banksByStatus,
-    users,
-    suspended,
+    usersByStatus,
     donations,
-    openRequests,
+    requestsByStatus,
+    activeBankRequests,
+    pendingReports,
     donationRows,
     signupRows,
+    requestRows,
+    demandRows,
+    supplyRows,
     pendingBanks,
+    latestReports,
   ] = await Promise.all([
     prisma.bloodBank.groupBy({
       by: ["verificationStatus"],
       _count: { _all: true },
     }),
-    prisma.user.count({ where: { role: Role.USER } }),
-    prisma.user.count({ where: { status: UserStatus.SUSPENDED } }),
+    prisma.user.groupBy({
+      by: ["status"],
+      where: { role: Role.USER },
+      _count: { _all: true },
+    }),
     prisma.donationHistory.count(),
-    prisma.donationRequest.count({ where: { status: RequestStatus.OPEN } }),
+    prisma.donationRequest.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.bankRequest.count({
+      where: {
+        status: { in: [BankRequestStatus.PENDING, BankRequestStatus.APPROVED] },
+      },
+    }),
+    prisma.report.count({ where: { status: ReportStatus.PENDING } }),
     prisma.donationHistory.findMany({
       where: { donatedAt: { gte: since() } },
       select: { donatedAt: true },
     }),
     prisma.user.findMany({
-      where: { createdAt: { gte: since() }, role: Role.USER },
+      where: { role: Role.USER, createdAt: { gte: since() } },
       select: { createdAt: true },
+    }),
+    prisma.donationRequest.findMany({
+      where: { createdAt: { gte: since() } },
+      select: { createdAt: true },
+    }),
+    prisma.donationRequest.groupBy({
+      by: ["bloodType"],
+      where: { createdAt: { gte: since() } },
+      _count: { _all: true },
+    }),
+    prisma.user.groupBy({
+      by: ["bloodType"],
+      where: {
+        role: Role.USER,
+        status: UserStatus.ACTIVE,
+        bloodType: { not: null },
+      },
+      _count: { _all: true },
     }),
     // oldest first: the review queue
     prisma.bloodBank.findMany({
@@ -196,6 +230,20 @@ const getAdminOverview = async () => {
         },
       },
     }),
+    prisma.report.findMany({
+      where: { status: ReportStatus.PENDING },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        category: true,
+        reason: true,
+        createdAt: true,
+        reporter: { select: { name: true } },
+        reportedUser: { select: { id: true, name: true } },
+        reportedBank: { select: { id: true, name: true } },
+      },
+    }),
   ]);
 
   const banks = Object.fromEntries(
@@ -205,6 +253,22 @@ const getAdminOverview = async () => {
     ]),
   ) as Record<VerificationStatus, number>;
 
+  const users = {
+    active:
+      usersByStatus.find((u) => u.status === UserStatus.ACTIVE)?._count._all ??
+      0,
+    suspended:
+      usersByStatus.find((u) => u.status === UserStatus.SUSPENDED)?._count
+        ._all ?? 0,
+  };
+
+  const requests = Object.fromEntries(
+    Object.values(RequestStatus).map((s) => [
+      s,
+      requestsByStatus.find((r) => r.status === s)?._count._all ?? 0,
+    ]),
+  ) as Record<RequestStatus, number>;
+
   const donationsByWeek = bucketByWeek(
     donationRows.map((r) => ({
       date: r.donatedAt,
@@ -212,22 +276,45 @@ const getAdminOverview = async () => {
     })),
     ["donations"] as const,
   );
-  
   const signupsByWeek = bucketByWeek(
     signupRows.map((r) => ({ date: r.createdAt, series: "signups" as const })),
     ["signups"] as const,
+  );
+  const requestsByWeek = bucketByWeek(
+    requestRows.map((r) => ({
+      date: r.createdAt,
+      series: "requests" as const,
+    })),
+    ["requests"] as const,
   );
 
   const weekly = donationsByWeek.map((w, i) => ({
     weekStart: w.weekStart,
     donations: w.counts.donations,
     signups: signupsByWeek[i]?.counts.signups ?? 0,
+    requests: requestsByWeek[i]?.counts.requests ?? 0,
+  }));
+
+  // All 8 blood types, always in the same order
+  const blood = Object.values(BloodType).map((bloodType) => ({
+    bloodType,
+    demand: demandRows.find((d) => d.bloodType === bloodType)?._count._all ?? 0,
+    supply: supplyRows.find((d) => d.bloodType === bloodType)?._count._all ?? 0,
   }));
 
   return {
-    counts: { banks, users, suspended, donations, openRequests },
+    counts: {
+      banks,
+      users,
+      donations,
+      requests,
+      activeBankRequests,
+      pendingReports,
+    },
     weekly,
+    blood,
     pendingBanks,
+    latestReports,
   };
 };
 

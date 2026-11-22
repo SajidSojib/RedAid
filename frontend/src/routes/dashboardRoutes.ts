@@ -78,9 +78,15 @@ export const DASHBOARD_ROUTES: Record<UserRole, DashboardRoute[]> = {
   ],
   ADMIN: [
     {
-      title: "Bank Verifications",
+      title: "Overview",
+      description: "Platform health, reviews and activity",
+      url: "/dashboard/overview",
+      icon: "layout",
+    },
+    {
+      title: "Bank Management",
       description: "Review and approve new blood bank registrations",
-      url: "/dashboard/bank-verifications",
+      url: "/dashboard/bank-management",
       icon: "shield",
     },
     {

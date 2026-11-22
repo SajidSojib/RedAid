@@ -20,7 +20,7 @@ export const dismissReport = async (id: string) => {
   const res = await reportServices.dismissReport(id);
   if (!res.error) {
     revalidatePath("/dashboard/users");
-    revalidatePath("/dashboard/bank-verifications");
+    revalidatePath("/dashboard/bank-management");
   }
   return res;
 };
