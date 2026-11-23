@@ -90,12 +90,6 @@ export const DASHBOARD_ROUTES: Record<UserRole, DashboardRoute[]> = {
       icon: "shield",
     },
     {
-      title: "Reports",
-      description: "Review accounts reported as fake or abusive",
-      url: "/dashboard/reports",
-      icon: "flag",
-    },
-    {
       title: "Users",
       description: "View and manage user accounts",
       url: "/dashboard/users",

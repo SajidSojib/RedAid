@@ -6,6 +6,7 @@ import { BloodType } from "../types/constant/bloodType";
 import { UserStatus } from "../types/constant/userStatus";
 import nodemailer from "nodemailer";
 import config from "../config";
+import { waitUntil } from "@vercel/functions";
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -26,6 +27,8 @@ export const auth = betterAuth({
   trustedOrigins: [config.frontend_url, config.backend_url],
   advanced: {
     cookiePrefix: "RedAid",
+    defaultCookieAttributes: { sameSite: "none", secure: true },
+    backgroundTasks: { handler: waitUntil },
   },
   emailAndPassword: {
     enabled: true,

@@ -35,7 +35,7 @@ export default async function AdminOverviewPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6">
+    <div className="mx-auto w-full max-w-5xl space-y-6">
       <header className="space-y-1.5 motion-safe:animate-fade-up">
         <h1 className="text-3xl font-bold tracking-tight">
           Platform{" "}
