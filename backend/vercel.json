@@ -1,9 +1,15 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm build",
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
-  "functions": {
-    "api/index.js": { "maxDuration": 30 }
-  }
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/server.mjs",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/api/server.mjs"
+    }
+  ]
 }

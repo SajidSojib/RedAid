@@ -24,10 +24,24 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  trustedOrigins: [config.frontend_url, config.backend_url],
+  trustedOrigins: [
+    config.frontend_url,
+    config.backend_url,
+  ],
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60,
+    },
+  },
   advanced: {
     cookiePrefix: "RedAid",
     defaultCookieAttributes: { sameSite: "none", secure: true },
+    useSecureCookies: process.env.NODE_ENV === "production",
+    crossSubDomainCookies: {
+      enabled: false,
+    },
+    // disableCSRFCheck: true,
     backgroundTasks: { handler: waitUntil },
   },
   emailAndPassword: {

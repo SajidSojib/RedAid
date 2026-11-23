@@ -45,7 +45,7 @@ export function ReportsQueue({
             const target = r.reportedUser ?? r.reportedBank;
             const href = r.reportedUser
               ? "/dashboard/users?view=reported"
-              : "/dashboard/bank-verifications?status=VERIFIED";
+              : "/dashboard/bank-management?status=VERIFIED";
             return (
               <li key={r.id}>
                 <Link

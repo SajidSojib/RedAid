@@ -18,7 +18,7 @@ const hasSessionCookie = (request: NextRequest) =>
 const getSessionUser = async (
   request: NextRequest,
 ): Promise<SessionUser | null> => {
-  try {
+  try { 
     const res = await fetch(`${env.API_URL}/auth/get-session`, {
       headers: { cookie: request.headers.get("cookie") ?? "" },
       cache: "no-store",
@@ -52,7 +52,7 @@ export async function proxy(request: NextRequest) {
 
   const role: UserRole = isKnownRole(user.role) ? user.role : "USER";
   const home = getDashboardHome(role);
-  const { pathname } = request.nextUrl;
+  const pathname = request.nextUrl.pathname;
 
   // /dashboard on its own forwards to the role's landing page
   if (pathname === "/dashboard") {

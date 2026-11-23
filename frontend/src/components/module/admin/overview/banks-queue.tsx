@@ -19,7 +19,7 @@ export function BanksQueue({
         <Button
           variant="outline"
           size="sm"
-          render={<Link href="/dashboard/bank-verifications" />}
+          render={<Link href="/dashboard/bank-management?status=PENDING" />}
           nativeButton={false}
         >
           Open queue
@@ -35,7 +35,7 @@ export function BanksQueue({
           {banks.map((b) => (
             <li key={b.id}>
               <Link
-                href="/dashboard/bank-verifications"
+                href="/dashboard/bank-management?status=PENDING"
                 className="group flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-muted/30"
               >
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/30 dark:text-amber-400">

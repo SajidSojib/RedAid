@@ -1,13 +1,13 @@
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { overviewServices } from "@/service/overview.service";
-import { ActionCard } from "@/components/module/admin/overciew/action-card";
-import { GrowthChart } from "@/components/module/admin/overciew/growth-chart";
-import { StatCards } from "@/components/module/admin/overciew/stat-cards";
-import { OutcomesChart } from "@/components/module/admin/overciew/outcomes-chart";
-import { BanksQueue } from "@/components/module/admin/overciew/banks-queue";
-import { ReportsQueue } from "@/components/module/admin/overciew/reports-queue";
-import { BloodChart } from "@/components/module/admin/overciew/blood-chart";
+import { ActionCard } from "@/components/module/admin/overview/action-card";
+import { GrowthChart } from "@/components/module/admin/overview/growth-chart";
+import { StatCards } from "@/components/module/admin/overview/stat-cards";
+import { OutcomesChart } from "@/components/module/admin/overview/outcomes-chart";
+import { BanksQueue } from "@/components/module/admin/overview/banks-queue";
+import { ReportsQueue } from "@/components/module/admin/overview/reports-queue";
+import { BloodChart } from "@/components/module/admin/overview/blood-chart";
 
 export const metadata = { title: "Overview · RedAid" };
 

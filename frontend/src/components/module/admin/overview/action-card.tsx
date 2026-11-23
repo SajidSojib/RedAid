@@ -43,7 +43,7 @@ export function ActionCard({
       <div className="space-y-3">
         {[
           {
-            href: "/dashboard/bank-verifications",
+            href: "/dashboard/bank-management?status=PENDING",
             label: "Banks to verify",
             value: banks,
           },
