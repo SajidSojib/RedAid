@@ -104,7 +104,7 @@ export default async function BankVerificationsPage({
     <div className="mx-auto w-full max-w-4xl space-y-8">
       <header className="space-y-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Bank verifications
+          Bank Management
         </h1>
         <p className="max-w-xl text-sm text-muted-foreground">
           Review new registrations, and suspend or revoke a bank that should no

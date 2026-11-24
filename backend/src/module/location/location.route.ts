@@ -48,4 +48,16 @@ router.post(
   locationControllers.createUnion,
 );
 
+router.get("/admin", auth(Role.ADMIN), locationControllers.listLocations);
+router.post(
+  "/admin/:level",
+  auth(Role.ADMIN),
+  locationControllers.createLocation,
+);
+router.patch(
+  "/admin/:level/:id",
+  auth(Role.ADMIN),
+  locationControllers.updateLocation,
+);
+
 export const locationRouter: Router = router;

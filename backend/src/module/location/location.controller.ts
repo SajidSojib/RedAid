@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 
-import { locationServices } from "./location.service";
+import { ListLocationsFilters, locationServices } from "./location.service";
 import { ApiResponse } from "../../utils/apiResponse";
 import asyncHandler from "../../utils/asyncHandler";
 
@@ -69,6 +69,36 @@ const createUnion = asyncHandler(async (req: Request, res: Response) => {
   },
 );
 
+const listLocations = asyncHandler(async (req: Request, res: Response) => {
+  const result = await locationServices.listLocations(
+    req.query as unknown as ListLocationsFilters,
+  );
+  return new ApiResponse(200, result, "Locations retrieved successfully").send(
+    res,
+  );
+});
+
+const createLocation = asyncHandler(async (req: Request, res: Response) => {
+  const location = await locationServices.createLocation(
+    req.params.level,
+    req.body,
+  );
+  return new ApiResponse(201, location, "Location created successfully").send(
+    res,
+  );
+});
+
+const updateLocation = asyncHandler(async (req: Request, res: Response) => {
+  const location = await locationServices.updateLocation(
+    req.params.level,
+    req.params.id as string,
+    req.body,
+  );
+  return new ApiResponse(200, location, "Location updated successfully").send(
+    res,
+  );
+});
+
 export const locationControllers = {
   getAllDivisions,
   getDistrictsByDivisionId,
@@ -78,4 +108,7 @@ export const locationControllers = {
   createDistrict,
   createUpazila,
   createUnion,
+  listLocations,
+  createLocation,
+  updateLocation,
 };

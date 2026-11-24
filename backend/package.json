@@ -8,6 +8,8 @@
     "dev": "tsx watch src/server.ts",
     "seed:admin": "tsx src/script/seedAdmin.ts",
     "seed:locations": "tsx src/script/seedLocations.ts",
+    "seed:demo": "tsx src/script/seedDemo.ts",
+    "seed:demo:reset": "tsx src/script/seedDemo.ts --reset",
     "build": "prisma generate && tsup src/server.ts --format esm --platform node --target node20 --outDir api --external pg-native",
     "postinstall": "prisma generate"
   },

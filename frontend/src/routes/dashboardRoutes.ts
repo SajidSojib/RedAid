@@ -11,6 +11,7 @@ export type IconKey =
   | "flag"
   | "users"
   | "layout"
+  | "map"
   ;
 
 
@@ -94,6 +95,12 @@ export const DASHBOARD_ROUTES: Record<UserRole, DashboardRoute[]> = {
       description: "View and manage user accounts",
       url: "/dashboard/users",
       icon: "users",
+    },
+    {
+      title: "Locations",
+      description: "Divisions, districts, upazilas and unions",
+      url: "/dashboard/locations",
+      icon: "map",
     },
   ],
 };
