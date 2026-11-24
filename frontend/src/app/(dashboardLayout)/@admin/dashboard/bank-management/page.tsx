@@ -135,14 +135,14 @@ export default async function BankVerificationsPage({
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1">
-            {(["VERIFIED", "REJECTED", "SUSPENDED"] as const).map((s) => {
+          <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-2">
+            {(["SUSPENDED", "REJECTED", "VERIFIED"] as const).map((s, index) => {
               const ui = STATUS_UI[s];
               const Icon = ui.icon;
               return (
                 <div
                   key={s}
-                  className="flex items-center gap-3 rounded-xl border bg-background/60 p-3 backdrop-blur"
+                  className={`flex items-center gap-3 rounded-xl border bg-background/60 p-3 backdrop-blur ${index === 2 ? "md:col-span-2 md:justify-center" : ""}`}
                 >
                   <div
                     className={cn(
@@ -226,44 +226,47 @@ export default async function BankVerificationsPage({
                         ui.glow,
                       )}
                     >
-                      <div className="space-y-4 p-5">
-                        <div className="flex items-start gap-4">
+                      <div className="space-y-3 sm:space-y-4 p-3 sm:p-5">
+                        <div className="flex items-start gap-2 sm:gap-4">
                           <div
                             className={cn(
-                              "flex size-11 shrink-0 items-center justify-center rounded-full ring-1 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6",
+                              "flex size-9 sm:size-11 shrink-0 items-center justify-center rounded-full ring-1 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6",
                               ui.chip,
                             )}
                           >
-                            <Building2 className="size-5" />
+                            <Building2 className="size-4 sm:size-5" />
                           </div>
 
                           <div className="min-w-0 flex-1 space-y-1">
-                            {/* title row: name, status badge, pending-reports badge */}
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h2 className="truncate text-lg font-semibold">
+                            {/* Mobile: single line | sm+: original wrapping layout */}
+                            <div className="flex min-w-0 flex-nowrap items-center gap-1.5 sm:flex-wrap sm:gap-2">
+                              <h2 className="min-w-0 flex-1 truncate text-sm font-semibold sm:min-w-0 sm:flex-1 sm:text-lg">
                                 {bank.name}
                               </h2>
+
                               <Badge
                                 variant="outline"
                                 className={cn(
-                                  "gap-1 border-transparent ring-1 capitalize",
+                                  "shrink-0 gap-1 border-transparent ring-1 capitalize text-[10px] px-1.5 sm:text-xs sm:px-2",
                                   ui.chip,
                                 )}
                               >
                                 <Icon className="size-3" />
                                 {bank.verificationStatus.toLowerCase()}
                               </Badge>
+
                               {bank.reports.pending > 0 && (
                                 <Badge
                                   variant="outline"
-                                  className="gap-1 border-transparent bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/30 dark:text-amber-400"
+                                  className="shrink-0 gap-1 border-transparent bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/30 text-[10px] px-1.5 sm:text-xs sm:px-2 dark:text-amber-400"
                                 >
                                   <Flag className="size-3" />
                                   {bank.reports.pending} pending
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-muted-foreground">
+
+                            <p className="text-xs text-muted-foreground sm:text-sm">
                               License{" "}
                               <span className="font-mono text-foreground">
                                 {bank.licenseNumber}
@@ -271,12 +274,12 @@ export default async function BankVerificationsPage({
                             </p>
                           </div>
 
-                          <span className="shrink-0 text-xs text-muted-foreground">
+                          <span className="shrink-0 text-[10px] text-muted-foreground sm:text-xs">
                             {timeAgo(bank.createdAt)}
                           </span>
                         </div>
 
-                        <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap gap-x-3 sm:gap-x-5 gap-y-1.5 text-xs sm:text-sm text-muted-foreground">
                           <span className="flex items-center gap-1.5">
                             <MapPin className="size-3.5" />
                             {bank.upazila.name}, {bank.upazila.district.name}
@@ -316,8 +319,8 @@ export default async function BankVerificationsPage({
                           )}
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/30 px-5 py-3">
-                        <div className="flex items-center gap-1">
+                      <div className="flex flex-col gap-2 border-t bg-muted/30 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:px-5 sm:py-3">
+                        <div className="flex items-center justify-between gap-1">
                           <BankDetailsDialog bank={bank} />
                           <ReportsDialog
                             target={{ bankId: bank.id }}

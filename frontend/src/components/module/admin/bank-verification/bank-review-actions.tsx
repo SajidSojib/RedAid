@@ -151,7 +151,7 @@ export function BankReviewActions({
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 justify-between">
       {status !== "VERIFIED" && verify}
       {status === "VERIFIED" && (
         <NoteDialog

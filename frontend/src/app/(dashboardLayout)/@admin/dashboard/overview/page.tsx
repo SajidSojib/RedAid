@@ -48,7 +48,7 @@ export default async function AdminOverviewPage() {
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 min-w-0 lg:grid-cols-3">
         <ActionCard
           banks={counts.banks.PENDING}
           reports={counts.pendingReports}
@@ -56,7 +56,7 @@ export default async function AdminOverviewPage() {
 
         <section
           style={delay(200)}
-          className="rounded-2xl border bg-card p-6 lg:col-span-2 motion-safe:animate-fade-up"
+          className="rounded-2xl min-w-0 border bg-card p-6 lg:col-span-2 motion-safe:animate-fade-up"
         >
           <h2 className="font-semibold">Platform activity</h2>
           <p className="mb-4 text-sm text-muted-foreground">Last 8 weeks</p>
@@ -75,7 +75,7 @@ export default async function AdminOverviewPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <section
           style={delay(400)}
-          className="rounded-2xl border bg-card p-6 lg:col-span-2 motion-safe:animate-fade-up"
+          className="rounded-2xl min-w-0 border bg-card p-6 lg:col-span-2 motion-safe:animate-fade-up"
         >
           <h2 className="font-semibold">Blood type demand and supply</h2>
           <p className="mb-4 text-sm text-muted-foreground">

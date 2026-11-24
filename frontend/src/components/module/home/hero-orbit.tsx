@@ -51,7 +51,7 @@ const FEATURES: Feature[] = [
 
 export function HeroOrbit() {
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-md lg:ml-auto">
+    <div className="relative mx-auto aspect-square w-full max-w-[20rem] sm:max-w-md lg:ml-auto">
       {/* soft glow behind everything */}
       <div
         aria-hidden
@@ -77,8 +77,8 @@ export function HeroOrbit() {
           aria-hidden
           className="absolute inset-0 rounded-full bg-primary/40 motion-safe:animate-ping"
         />
-        <div className="relative flex size-24 items-center justify-center rounded-full bg-primary shadow-xl shadow-primary/30 sm:size-28">
-          <LogoMark inverted className="size-14 sm:size-16" />
+        <div className="relative flex size-20 items-center justify-center rounded-full bg-primary shadow-xl shadow-primary/30 sm:size-28">
+          <LogoMark inverted className="size-12 sm:size-16" />
         </div>
       </div>
 
@@ -87,10 +87,10 @@ export function HeroOrbit() {
         <div key={label} className={`absolute ${position}`}>
           <div
             style={{ animationDelay: `${delay}ms` }}
-            className="flex items-center gap-2 rounded-xl border bg-card/80 px-2.5 py-1.5 text-xs font-medium whitespace-nowrap shadow-lg backdrop-blur sm:px-3 sm:py-2 sm:text-sm motion-safe:animate-float"
+            className="flex items-center gap-1.5 rounded-xl border bg-card/80 px-2 py-1 text-[10px] font-medium whitespace-nowrap shadow-lg backdrop-blur sm:gap-2 sm:px-3 sm:py-2 sm:text-sm motion-safe:animate-float"
           >
-            <span className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary sm:size-7">
-              <Icon className="size-3.5 sm:size-4" />
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:size-7">
+              <Icon className="size-3 sm:size-4" />
             </span>
             {label}
           </div>

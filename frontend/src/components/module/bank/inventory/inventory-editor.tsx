@@ -80,7 +80,7 @@ export function InventoryEditor({
 
   return (
     <div className="space-y-6">
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {initial.map(({ bloodType }) => {
           const units = values[bloodType];
           const state = level(units);

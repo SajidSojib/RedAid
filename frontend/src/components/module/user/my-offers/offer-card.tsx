@@ -58,7 +58,7 @@ export default function OfferCard({
               <UrgencyBadge urgency={request.urgency} />
               {!live && <MatchStatusBadge status={offer.status} />}
             </div>
-            <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <CardDescription className="flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1">
               <span className="inline-flex items-center gap-1">
                 <MapPin className="size-3.5" />
                 {place}

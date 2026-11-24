@@ -19,7 +19,6 @@ export default function LogoutButton({ className, icon=false }: { className?: st
       await authClient.signOut({
         fetchOptions: {
           onSuccess: () => {
-            // router.push("/login");
             router.refresh();
           },
         },

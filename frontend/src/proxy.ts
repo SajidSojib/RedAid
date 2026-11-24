@@ -52,8 +52,8 @@ export async function proxy(request: NextRequest) {
 
   const role: UserRole = isKnownRole(user.role) ? user.role : "USER";
   const home = getDashboardHome(role);
-  const pathname = request.nextUrl.pathname;
-
+  const {pathname} = request.nextUrl;
+  console.log(home, pathname)
   // /dashboard on its own forwards to the role's landing page
   if (pathname === "/dashboard") {
     return NextResponse.redirect(new URL(home, request.url));

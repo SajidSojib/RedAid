@@ -27,9 +27,9 @@ export function Hero() {
       />
       <CursorGlow />
 
-      <div className="container mx-auto grid flex-1 items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-2 lg:gap-8 lg:py-28">
+      <div className="container mx-auto grid flex-1 items-center gap-8 px-4 py-10 sm:px-6 md:py-24 lg:grid-cols-2 lg:gap-8 lg:py-28">
         {/* left: copy */}
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           <Badge
             variant="outline"
             className="motion-safe:animate-fade-up gap-2 py-1.5 pr-3 pl-2"
@@ -43,7 +43,7 @@ export function Hero() {
 
           <h1
             style={delay(100)}
-            className="motion-safe:animate-fade-up text-4xl font-bold tracking-tight text-balance sm:text-5xl lg:text-6xl"
+            className="motion-safe:animate-fade-up text-3xl font-bold tracking-tight text-balance sm:text-5xl lg:text-6xl"
           >
             Blood when it matters, from{" "}
             <span className="bg-linear-to-r from-primary via-destructive to-primary bg-size-[200%_auto] bg-clip-text text-transparent motion-safe:animate-gradient">
@@ -53,7 +53,7 @@ export function Hero() {
 
           <p
             style={delay(200)}
-            className="motion-safe:animate-fade-up max-w-xl text-lg text-pretty text-muted-foreground"
+            className="motion-safe:animate-fade-up max-w-xl text-sm text-pretty text-muted-foreground sm:text-lg"
           >
             RedAid connects patients with eligible donors in their own union and
             upazila, and with verified blood banks, so help reaches the hospital
@@ -62,7 +62,7 @@ export function Hero() {
 
           <div
             style={delay(300)}
-            className="motion-safe:animate-fade-up flex flex-wrap items-center gap-3"
+            className="motion-safe:animate-fade-up flex flex-wrap items-center gap-2 sm:gap-3"
           >
             <Button
               size="lg"
@@ -81,6 +81,7 @@ export function Hero() {
               Become a donor
             </Button>
             <Button
+              className="hidden sm:inline-flex"
               size="lg"
               variant="link"
               render={<Link href="/all-requests" />}
@@ -92,14 +93,16 @@ export function Hero() {
 
           <dl
             style={delay(400)}
-            className="motion-safe:animate-fade-up grid max-w-md grid-cols-3 gap-6 border-t pt-6"
+            className="motion-safe:animate-fade-up grid max-w-md grid-cols-3 gap-3 sm:gap-6 border-t pt-5 sm:pt-6"
           >
             {FACTS.map((fact) => (
               <div key={fact.label}>
-                <dt className="text-2xl font-semibold tracking-tight">
+                <dt className="text-xl font-semibold tracking-tight sm:text-2xl">
                   {fact.value}
                 </dt>
-                <dd className="text-xs text-muted-foreground">{fact.label}</dd>
+                <dd className="text-[11px] text-muted-foreground sm:text-xs">
+                  {fact.label}
+                </dd>
               </div>
             ))}
           </dl>

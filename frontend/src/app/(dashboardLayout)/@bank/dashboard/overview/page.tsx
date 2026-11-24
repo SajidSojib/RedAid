@@ -82,12 +82,12 @@ export default async function BankOverviewPage() {
 
       <VerificationBanner bank={bank} />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="min-w-0 grid gap-6 lg:grid-cols-3">
         <ActionCard pending={counts.pending} approved={counts.approved} />
 
         <section
           style={delay(200)}
-          className="rounded-2xl border bg-card p-6 lg:col-span-2 motion-safe:animate-fade-up"
+          className="rounded-2xl min-w-0 border bg-card p-6 lg:col-span-2 motion-safe:animate-fade-up"
         >
           <h2 className="font-semibold">Requests handled</h2>
           <p className="mb-4 text-sm text-muted-foreground">Last 8 weeks</p>
@@ -104,7 +104,7 @@ export default async function BankOverviewPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <section
           style={delay(300)}
-          className="rounded-2xl border bg-card p-6 lg:col-span-2 motion-safe:animate-fade-up"
+          className="rounded-2xl min-w-0 border bg-card p-6 lg:col-span-2 motion-safe:animate-fade-up"
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>

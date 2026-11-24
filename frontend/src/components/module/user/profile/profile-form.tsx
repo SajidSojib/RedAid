@@ -115,18 +115,6 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       }}
     >
       <FieldGroup className="gap-5">
-        <div className="flex items-center gap-4">
-          <Avatar className="size-16 ring-2 ring-primary/30 ring-offset-2 ring-offset-card">
-            <AvatarImage src={profile.image ?? undefined} alt={profile.name} />
-            <AvatarFallback className="text-lg">
-              {initials(profile.name)}
-            </AvatarFallback>
-          </Avatar>
-          <p className="text-sm text-muted-foreground">
-            Current photo. Pick a new one below to replace it.
-          </p>
-        </div>
-
         <form.Field name="image">
           {(field) => (
             <ImageUploadField
