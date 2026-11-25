@@ -18,6 +18,7 @@ import { dismissReport, getReports } from "@/action/report.action";
 import { timeAgo } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import type { Report, ReportTarget } from "@/service/report.service";
+import { ReportSummary } from "./report-summery";
 
 const CATEGORY: Record<string, string> = {
   FAKE_REQUEST: "Fake request",
@@ -91,6 +92,8 @@ export function ReportsDialog({
             request can report.
           </DialogDescription>
         </DialogHeader>
+        
+        {total >= 3 && <ReportSummary target={target} total={total} />}
 
         {error ? (
           <p className="text-sm text-destructive">{error}</p>

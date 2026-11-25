@@ -72,9 +72,22 @@ const dismissReport = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
+const summarizeReports = asyncHandler(async (req: Request, res: Response) => {
+  const userId = str(req.query.userId);
+  const bankId = str(req.query.bankId);
+
+  const result = await reportServices.summarizeReports({
+    ...(userId && { userId }),
+    ...(bankId && { bankId }),
+  });
+
+  return new ApiResponse(200, result, "Summary created successfully").send(res);
+});
+
 export const reportControllers = {
   getEligibility,
   createReport,
   getReports,
   dismissReport,
+  summarizeReports,
 };

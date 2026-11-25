@@ -18,6 +18,8 @@ const config = {
   app_name: process.env.APP_NAME,
   app_email: process.env.APP_EMAIL as string,
   app_pass: process.env.APP_PASS,
+  gemini_api_key: process.env.GEMINI_API_KEY as string,
+  groq_api_key: process.env.GROQ_API_KEY as string,
 };
  
 export default config;

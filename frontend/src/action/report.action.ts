@@ -24,3 +24,6 @@ export const dismissReport = async (id: string) => {
   }
   return res;
 };
+
+export const getReportSummary = async (t: ReportTarget) =>
+  reportServices.getSummary(t);

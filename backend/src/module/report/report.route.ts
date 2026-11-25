@@ -27,4 +27,6 @@ router.patch(
   reportControllers.dismissReport,
 );
 
+router.get("/summary", auth(Role.ADMIN), reportControllers.summarizeReports);
+
 export const reportRouter: Router = router;

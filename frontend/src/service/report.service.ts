@@ -40,6 +40,14 @@ export type CreateReportInput = ReportTarget & {
   reason: string;
 };
 
+export type ReportSummary = {
+  overview: string;
+  themes: { label: string; count: number }[];
+  severity: "low" | "medium" | "high";
+  basedOn: number;
+  total: number;
+};
+
 const qs = (t: ReportTarget) =>
   "userId" in t
     ? `userId=${encodeURIComponent(t.userId)}`
@@ -60,9 +68,13 @@ const dismissReport = (id: string, note?: string) =>
     body: { note },
   });
 
+const getSummary = (t: ReportTarget) =>
+  authedRequest<ReportSummary>(`/reports/summary?${qs(t)}`);
+
 export const reportServices = {
   getReports,
   getEligibility,
   createReport,
   dismissReport,
+  getSummary,
 };
