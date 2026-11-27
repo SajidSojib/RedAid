@@ -228,8 +228,9 @@ erDiagram
     │   ├── service/            # API calls returning { data, error }
     │   ├── action/             # server actions that expire cache tags
     │   ├── routes/             # dashboard route map (single source of truth)
-    │   └── lib/
-    └── proxy.ts                # session and role guard for /dashboard
+    │   ├── lib/
+    │   └── proxy.ts            # session and role guard for /dashboard
+    └── .env            
 ```
 
 ## API overview
@@ -327,8 +328,6 @@ NEXT_PUBLIC_IMG_UPLOAD_URL=https://api.imgbb.com/1/upload
 
 ```bash
 cd backend
-pnpm seed:admin          # admin
-pnpm seed:locations      # divisions, districts, upazila and unions
 pnpm seed:demo           # sample donors, banks, requests, reports
 pnpm seed:demo:reset     # remove and rebuild the sample data
 ```
@@ -360,13 +359,17 @@ The repo is deployed as two Vercel projects, one per folder (set **Root Director
 
 ## Screenshots
 
-| Home | My Donations |
+| Home |
+|---|
+| ![Home](docs/images/home.png) |
+
+| All requests | My Donations |
 |---|---|
-| ![](docs/images/home.png) | ![](docs/images/my-donations.png) |
+| ![All requests](docs/images/all-requests.png) | ![My Donations](docs/images/my-donations.png) |
 
 | Bank overview | Admin overview |
 |---|---|
-| ![](docs/images/bank-overview.png) | ![](docs/images/admin-overview.png) |
+| ![Bank overview](docs/images/bank-overview.png) | ![Admin overview](docs/images/admin-overview.png) |
 
 ## Author
 
